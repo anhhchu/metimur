@@ -162,6 +162,7 @@ for table in tables:
 
 # COMMAND ----------
 
+# Use this cell to detect the set the queryPath to query_file or query_file_dir
 if os.path.isdir(queryPath):
     query_file_dir = queryPath
     query_file = None
@@ -216,7 +217,7 @@ metrics = benchmark.execute()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC In Beaker, elapsed_time is calculated by `perf_counter` before and after query execution. It will be slightly different from the query metrics view from `/api/2.0/sql/history/queries` API
+# MAGIC In Beaker, elapsed_time is calculated by `perf_counter` before and after query execution. It will be slightly different from the query duration from `/api/2.0/sql/history/queries` API
 
 # COMMAND ----------
 
