@@ -1,3 +1,5 @@
 .env
 .DS_Store
-faker.py
+./assets/faker.py
+setup.py
+.env

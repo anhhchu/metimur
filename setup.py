@@ -1,4 +1,8 @@
 # Databricks notebook source
+from beaker.benchmark import Benchmark
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## Set up Delta Generator
 
@@ -61,9 +65,6 @@ elif catalog != "samples":
   spark.sql(f"USE catalog {catalog}")
   spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{database}")
   spark.sql(f"USE {catalog}.{database}")
-
-
-# COMMAND ----------
 
 print(f"Use default {catalog}.{database}")
 
@@ -238,9 +239,9 @@ def generate_delta_table(rows, table, table_schema, delta_path):
 # DBTITLE 1,Global variables for Beaker
 hostname = spark.conf.get("spark.databricks.workspaceUrl")
 token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
-sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses"
 
 def get_warehouse(warehouse_name):
+  sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses"
   response = requests.get(sql_warehouse_url, headers={"Authorization": f"Bearer {token}"})
   
   if response.status_code == 200:
@@ -285,7 +286,6 @@ def create_benchmark(
         Benchmark: A configured Benchmark object.
     """
     benchmark = Benchmark()
-    benchmark.setName(name)
     benchmark.setHostname(hostname=hostname)
     benchmark.setWarehouseToken(token=token)
     benchmark.setCatalog(catalog=catalog)

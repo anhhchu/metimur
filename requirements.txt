@@ -1,4 +1,5 @@
 dbldatagen
 python-dotenv
-./assets/beaker-0.0.1-py3-none-any.whl
 faker
+databricks-sql-connector
+./assets/Beaker-0.0.4-py3-none-any.whl
