@@ -176,12 +176,12 @@ else:
 warehouse_id = get_warehouse(hostname, token, warehouse_name)
 
 if warehouse_id:
-    # Use current warehouse
+    # Use your own warehouse
     print(f"Use current warehouse {warehouse_name}")
     http_path = f"/sql/1.0/warehouses/{warehouse_id}"
     new_warehouse_config = None
 else:
-    # Specify new warehouse
+    # Specif a new warehouse
     http_path = None
     print(f"Specify new warehouse {warehouse_name}")
     new_warehouse_config = {
@@ -194,11 +194,10 @@ else:
         "enable_photon": True,
     }
 
-
 metrics_view = benchmark
 
-benchmark = Benchmark(
-    name=benchmark,
+beaker = Benchmark(
+    name=metrics_view,
     db_hostname=hostname,
     token=token,
     query_file=query_file,
@@ -212,7 +211,7 @@ benchmark = Benchmark(
     results_cache_enabled=False
 )
 
-metrics = benchmark.execute()
+metrics = beaker.execute()
 
 # COMMAND ----------
 
