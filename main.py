@@ -3,6 +3,7 @@
 # MAGIC # Set up
 # MAGIC * Update parameters in below cell
 # MAGIC * Note: 
+# MAGIC   * Only work with Unity Catalog and SQL Serverless enabled workspace  
 # MAGIC   * If using Unity Catalog, specify catalog name and use cluster with UC enabled
 
 # COMMAND ----------
