@@ -14,44 +14,43 @@ from beaker.sqlwarehouseutils import SQLWarehouseUtils
 
 from beaker.benchmark import Benchmark
 
-dbutils.library.restartPython()
+hostname =  spark.conf.get("spark.databricks.workspaceUrl")
+token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+
 
 query_file_dir = "../queries/tpch"
 query_file = "../queries/tpch/2.sql"
 
-hostname =  spark.conf.get("spark.databricks.workspaceUrl")
-token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
-
 catalog = 'samples'
 database = 'tpch'
-# warehouse_name = '🧪 Beaker Benchmark Testing Warehouse'
-warehouse_name = 'ahc_test_warehouse'
+# warehouseName = '🧪 Beaker Benchmark Testing Warehouse'
+warehouseName = 'ahc_test_warehouse'
 warehouseSize = 'X-Small'
 
-def get_warehouse(warehouse_name):
+def get_warehouse(warehouseName):
   sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses"
   response = requests.get(sql_warehouse_url, headers={"Authorization": f"Bearer {token}"})
   
   if response.status_code == 200:
     for warehouse in response.json()['warehouses']:
-      if warehouse['name'] == warehouse_name:
+      if warehouse['name'] == warehouseName:
         return(warehouse['id'])
   else:
     print(f"Error: {response.json()['error_code']}, {response.json()['message']}")
 
-warehouse_id = get_warehouse(warehouse_name)
+warehouse_id = get_warehouse(warehouseName)
 
 if warehouse_id:
     # Use current warehouse
-    print(f"Use current warehouse {warehouse_name}")
+    print(f"Use current warehouse {warehouseName}")
     http_path = f"/sql/1.0/warehouses/{warehouse_id}"
     new_warehouse_config = None
 else:
     # Specify new warehouse
     http_path = None
-    print(f"Specify new warehouse {warehouse_name}")
+    print(f"Specify new warehouse {warehouseName}")
     new_warehouse_config = {
-        "name": warehouse_name,
+        "name": warehouseName,
         "type": "warehouse",
         "runtime": "latest",
         "size": warehouseSize,

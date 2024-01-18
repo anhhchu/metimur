@@ -1,40 +1,13 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Set up
-# MAGIC * Update parameters in below cell
-# MAGIC * Note: 
-# MAGIC   * Only work with Unity Catalog and SQL Serverless enabled workspace  
-# MAGIC   * If using Unity Catalog, specify catalog name and use cluster with UC enabled
-
-# COMMAND ----------
-
-# Use reload_ext to reload the changes in other files
-%reload_ext autoreload
-%autoreload 2
-
-# COMMAND ----------
-
-# MAGIC %pip install -r requirements.txt
-
-# COMMAND ----------
-
-dbutils.library.restartPython()
-
-# COMMAND ----------
-
-# Import utils functions
-from utils import *
-
-# COMMAND ----------
-
-hostname = spark.conf.get("spark.databricks.workspaceUrl")
-token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Benchmarking options
+# MAGIC # Introduction
+# MAGIC A quick start solution to use Databricks Serverless SQL
+# MAGIC * Customize data generation
+# MAGIC * Benchmark performance using tpch, tpcds, or bring your own data
+# MAGIC * If choose Bring your Own Data (BYOD), specify your own catalog and database location
+# MAGIC * If using Unity Catalog, specify catalog name and use cluster with UC enabled
 # MAGIC
+# MAGIC ## Benchmarking options
 # MAGIC
 # MAGIC | Data | Database | Description | Total size |
 # MAGIC | --- | --- | --- | --- |
@@ -45,32 +18,45 @@ token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiTok
 # MAGIC | tpch_sf1000 | serverless_benchmark.tpch_sf1000 | TPC-H scale factor 1000 | ~1TB |
 # MAGIC | tpcds_sf10tcl | serverless_benchmark.tpcds_sf10tcl |  | ~10TB |
 # MAGIC | tpcds_sf100tcl | serverless_benchmark.tpcds_sf100tcl |  | ~100TB |
-# MAGIC |byod (bring your own data) | ||
+# MAGIC |byod (bring your own data) |customized catalog and database ||
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Set up
+
+# COMMAND ----------
+
+# MAGIC %pip install -r requirements.txt
+# MAGIC dbutils.library.restartPython()
+
+# COMMAND ----------
+
+# Import utils functions
+from utils import *
+hostname = spark.conf.get("spark.databricks.workspaceUrl")
+token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 # Specify the benchmarking options
 dbutils.widgets.dropdown(name="benchmark", defaultValue="tpch", choices=["tpch", "tpch_sf1", "tpch_sf10", "tpch_sf100", "tpch_sf1000","tpcds_sf10", "tpcds_sf100",  "byod"])
 
-# Specify name for your warehouse
-dbutils.widgets.text(name="warehouse_name", defaultValue="🧪 Beaker Benchmark Testing Warehouse", label="warehouse_name")
-
-#Specify your schema directory and query file location
-dbutils.widgets.text(name="schemaPath", defaultValue="", label="schemaPath")
+#Specify your query file location
 dbutils.widgets.text(name="queryPath", defaultValue="./queries/tpch.sql", label="queryPath")
 
 benchmark = dbutils.widgets.get("benchmark")
-warehouse_name = dbutils.widgets.get("warehouse_name")
-schemaPath = dbutils.widgets.get("schemaPath")
+warehouseName = dbutils.widgets.get("warehouseName")
 queryPath = dbutils.widgets.get("queryPath")
 
 # COMMAND ----------
 
+# Specify name for your warehouse
+dbutils.widgets.text(name="warehouseName", defaultValue="🧪 Beaker Benchmark Testing Warehouse", label="warehouseName")
+dbutils.widgets.dropdown(name="warehouseType", defaultValue="serverless", choices=["serverless", "pro", "classic"], label="warehouseType")
 dbutils.widgets.text(name="concurrency", defaultValue="5", label="concurrency")
 dbutils.widgets.dropdown(name="warehouseSize", defaultValue="Small", choices=["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"], label="warehouseSize")
 # convert concurrency to integer
 concurrency = int(dbutils.widgets.get("concurrency"))
 warehouseSize = dbutils.widgets.get("warehouseSize")
+warehouseType = dbutils.widgets.get("warehouseType")
 
 # COMMAND ----------
 
@@ -109,56 +95,16 @@ print(f"Use default {catalog}.{database}")
 
 # COMMAND ----------
 
-# Grant read permission of public benchmark data (tpch, tpcds) to all users in the workspace
-if benchmark != "byod" and catalog != "samples":
-  print("Grant READ permission")
-  spark.sql(f"GRANT SELECT ON SCHEMA {database} to `account users`")
+## TODO: How to grant permission to all users?
+# # Grant read permission of public benchmark data (tpch, tpcds) to all users in the workspace
+# if benchmark != "byod" and catalog != "samples":
+#   print("Grant READ permission")
+#   spark.sql(f"GRANT SELECT ON SCHEMA {database} to `account users`")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Generate data
-# MAGIC
-# MAGIC Generate data for bring your own data
-
-# COMMAND ----------
-
-# DBTITLE 1,Import schema definition file
-table_schemas = import_schema(schemaPath)
-tables = list(table_schemas.keys())
-tables
-
-# COMMAND ----------
-
-# DBTITLE 1,Set table rows
-output_rows = {}
-for table in table_schemas.keys():
-  rows = input(f"rows for table {table}")
-  output_rows[table] = int(rows)
-
-# COMMAND ----------
-
-# DBTITLE 1,Generate Delta Tables
-for table in tables:
-  sc.setJobDescription(f"Step 1: Generate table {table}") 
-  print(f"**Data generation for {table}**")
-  delta_path = os.path.join(storage_dir, table)
-  generate_delta_table(output_rows[table], table, table_schemas[table], delta_path)
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC show tables
-
-# COMMAND ----------
-
-for table in tables:
-  spark.sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS FOR ALL COLUMNS;")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Beaker Benchmark
+# MAGIC # Benchmark
 
 # COMMAND ----------
 
@@ -173,20 +119,21 @@ else:
 # COMMAND ----------
 
 # Get warehouse id
-warehouse_id = get_warehouse(hostname, token, warehouse_name)
+warehouse_id = get_warehouse(hostname, token, warehouseName)
 
 if warehouse_id:
     # Use your own warehouse
-    print(f"Use current warehouse {warehouse_name}")
+    print(f"Use current warehouse {warehouseName} {warehouse_id}")
     http_path = f"/sql/1.0/warehouses/{warehouse_id}"
     new_warehouse_config = None
 else:
     # Specif a new warehouse
     http_path = None
-    print(f"Specify new warehouse {warehouse_name}")
+    print(f"Specify new warehouse {warehouseName}")
     new_warehouse_config = {
-        "name": warehouse_name,
+        "name": warehouseName,
         "type": "warehouse",
+        "warehouse": warehouseType,
         "runtime": "latest",
         "size": warehouseSize,
         "min_num_clusters": 1,
@@ -194,24 +141,24 @@ else:
         "enable_photon": True,
     }
 
-metrics_view = benchmark
 
-beaker = Benchmark(
-    name=metrics_view,
-    db_hostname=hostname,
-    token=token,
-    query_file=query_file,
-    query_file_dir=query_file_dir,
-    concurrency=concurrency,
-    query_repeat_count=1,
-    warehouse_http_path=http_path,
-    catalog=catalog,
-    schema=database,
-    new_warehouse_config=new_warehouse_config,
-    results_cache_enabled=False
-)
+benchmark_configs = {
+"name":benchmark,
+"db_hostname":hostname,
+"token":token,
+"query_file":query_file,
+"query_file_dir":query_file_dir,
+"concurrency":concurrency,
+"query_repeat_count":1,
+"warehouse_http_path":http_path,
+"catalog":catalog,
+"schema":database,
+"new_warehouse_config":new_warehouse_config,
+"results_cache_enabled": True
+}
 
-metrics = beaker.execute()
+bm = Benchmark(**benchmark_configs)
+metrics = bm.execute()
 
 # COMMAND ----------
 
@@ -220,7 +167,7 @@ metrics = beaker.execute()
 
 # COMMAND ----------
 
-spark.sql(f"select id, query, float(elapsed_time) as elapsed_time from {metrics_view}_vw;").display()
+spark.sql(f"select id, query, float(elapsed_time) as elapsed_time from {benchmark}_vw;").display()
 
 # COMMAND ----------
 
@@ -230,7 +177,7 @@ spark.sql(f"select id, query, float(elapsed_time) as elapsed_time from {metrics_
 # COMMAND ----------
 
 response = get_query_history(hostname=hostname, token=token, warehouse_id=warehouse_id)
-get_query_metrics(response, view_name = metrics_view)
+get_query_metrics(response, view_name = benchmark)
 
 # COMMAND ----------
 
@@ -246,20 +193,12 @@ spark.sql(
   v1.`metrics.query_execution_time_ms`/1000 as query_execution_time_sec, 
   v1.`metrics.planning_time_ms`/1000 as planning_time_sec, 
   v1.`metrics.photon_total_time_ms`/1000 as photon_total_time_sec
-from {metrics_view}_hist_view v1
-join {metrics_view}_vw v2
+from {benchmark}_hist_view v1
+join {benchmark}_vw v2
 on v1.query_text = v2.query
 """
 ).display()
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC # Teardown
-# MAGIC Run at the end of the analysis
 
-# COMMAND ----------
-
-# Only remove bring your own data (we keep data of other benchmark to reuse in the workspace)
-if benchmark == "byod":
-  teardown(database=database)

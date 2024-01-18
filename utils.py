@@ -22,8 +22,8 @@ import pandas as pd
 
 
 # Import beaker 
-# from beaker.benchmark import Benchmark
-from beaker import Benchmark
+from beaker.benchmark import Benchmark
+# from beaker import Benchmark
 
 load_dotenv()
 
