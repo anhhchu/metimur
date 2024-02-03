@@ -12,20 +12,19 @@ import csv
 import time
 import os
 import requests
-from dotenv import load_dotenv
 import logging
 from dbldatagen import DataGenerator, fakerText
 from faker.providers import internet
 import dbldatagen.distributions as dist
-from collections.abc import MutableMapping
 import pandas as pd
+from databricks.sdk import WorkspaceClient
+import math
 
 
 # Import beaker 
-from beaker.benchmark import Benchmark
-# from beaker import Benchmark
+# from beaker.benchmark import Benchmark
+from beaker import Benchmark
 
-load_dotenv()
 
 # Util for creating string lists of varying word lengths  
 def get_random_strings_list(list_len, word_len):
@@ -163,31 +162,84 @@ def get_warehouse(hostname, token, warehouse_name):
     print(f"Error: {response.json()['error_code']}, {response.json()['message']}")
 
 
-def get_query_history(hostname, token, warehouse_id):
+# def get_query_history(hostname, token, warehouse_id, start_ts_ms):
+#   """
+#   Retrieves the Query History for a given workspace and Data Warehouse.
+
+#   Parameters:
+#   -----------
+#   workspaceName (str): The workspace URL where the Data Warehouse is located.
+#   token(str): The Personal Access Token (token) to access the Databricks API.
+#   warehouse_id (str): The ID of the Data Warehouse for which to retrieve the Query History.
+
+#   Returns:
+#   --------
+#   :obj:`requests.Response`
+#   A Response object containing the results of the Query History API call.
+#   """
+#   ## Put together request 
+
+#   request_string = {
+#       "filter_by": {
+#         "query_start_time_range": {
+#             # "end_time_ms": end_ts_ms,
+#             "start_time_ms": start_ts_ms
+#       },
+#       "statuses": [
+#           "FINISHED"
+#       ],
+#       "warehouse_ids": warehouse_id
+#       },
+#       "include_metrics": "true",
+#       "max_results": "1000"
+#   }
+
+#   ## Convert dict to json
+#   v = json.dumps(request_string)
+
+#   uri = f"https://{hostname}/api/2.0/sql/history/queries"
+#   headers_auth = {"Authorization":f"Bearer {token}"}
+
+#   #### Get Query History Results from API
+#   res = requests.get(uri, data=v, headers=headers_auth)
+#   return res
+
+
+  
+# def get_query_metrics(response, view_name = "demo_query"):
+#     assert (response.status_code == 200), "Failed to achieve query history" 
+#     end_res = response.json()['res']
+#     assert (end_res), "No query history" 
+#     df = spark.createDataFrame( end_res)
+#     df.createOrReplaceTempView(f"{view_name}_hist_view")
+#     print(f"""View Query History at: {view_name}_hist_view""" )
+  
+
+def get_query_history(hostname, token, warehouse_id, start_ts_ms, view_name = "demo_query"):
   """
   Retrieves the Query History for a given workspace and Data Warehouse.
 
   Parameters:
   -----------
-  workspaceName (str): The workspace URL where the Data Warehouse is located.
+  hostname (str): The URL of the Databricks workspace where the Data Warehouse is located.
   token(str): The Personal Access Token (token) to access the Databricks API.
   warehouse_id (str): The ID of the Data Warehouse for which to retrieve the Query History.
+  start_ts_ms (int): The Unix timestamp (milliseconds) value representing the start of the query history.
+  view_name (str, optional): The name of the view created from the Spark DataFrame containing Query History. Defaults to "demo_query".
 
   Returns:
   --------
-  :obj:`requests.Response`
-  A Response object containing the results of the Query History API call.
+  None
   """
   ## Put together request 
-
   request_string = {
       "filter_by": {
-      #   "query_start_time_range": {
-      #   "end_time_ms": end_ts_ms,
-      #   "start_time_ms": start_ts_ms
-      # },
+        "query_start_time_range": {
+            # "end_time_ms": end_ts_ms,
+            "start_time_ms": start_ts_ms
+      },
       "statuses": [
-          "FINISHED", "CANCELED"
+          "FINISHED"
       ],
       "warehouse_ids": warehouse_id
       },
@@ -202,27 +254,16 @@ def get_query_history(hostname, token, warehouse_id):
   headers_auth = {"Authorization":f"Bearer {token}"}
 
   #### Get Query History Results from API
-  res = requests.get(uri, data=v, headers=headers_auth)
-  return res
-
-
-
-def _flatten_dict(d: MutableMapping, sep: str= '.') -> MutableMapping:
-    [flat_dict] = pd.json_normalize(d, sep=sep).to_dict(orient='records')
-    return flat_dict
+  response = requests.get(uri, data=v, headers=headers_auth)
   
-def get_query_metrics(response, view_name = "demo_query"):
+  if (response.status_code == 200) and ("res" in response.json()):
     end_res = response.json()['res']
-    metrics_res = []
-    for res_dict in end_res:
-        flatten = _flatten_dict(res_dict)
-        metrics_res.append(flatten)
-
-    df = spark.createDataFrame( metrics_res)
+    df = spark.createDataFrame( end_res)
     df.createOrReplaceTempView(f"{view_name}_hist_view")
-    print(f"""Completed creating query metrics from query history, query temp view for details \n
-            select * from {view_name}_hist_view""" )
-  
+    print(f"""View Query History at: {view_name}_hist_view""" )
+  else:
+    print("Failed to retrieve query history")
+    
 
 def teardown(catalog, database):
   """
