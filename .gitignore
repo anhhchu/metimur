@@ -2,5 +2,6 @@
 .DS_Store
 ./assets/faker.py
 setup.py
-.env
 beaker
+myvenv
+download/*
