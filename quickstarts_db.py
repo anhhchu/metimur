@@ -27,12 +27,13 @@
 # MAGIC
 # MAGIC * query_repetition_count: This parameter determines the number of times each query in the benchmark will be executed.
 # MAGIC
-# MAGIC Specify the concurrency level, and cluster size:
+# MAGIC Specify the concurrency level, cluster size, and whether to enable result cache:
 # MAGIC
 # MAGIC * concurrency: This parameter sets the level of concurrency, indicating how many queries can be executed simultaneously.
 # MAGIC
 # MAGIC * max_clusters: This parameter specifies the maximum number of clusters that the warehouse can be scaled up to. We recommend 1 cluster for 10 concurrent queries (maximum 25 clusters)
 # MAGIC
+# MAGIC * results_cache_enabled (default False): if False the query won't be served from result cache
 
 # COMMAND ----------
 
@@ -193,6 +194,10 @@ elif benchmark_choice == "multiple-warehouses":
 # COMMAND ----------
 
 metrics.display()
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
