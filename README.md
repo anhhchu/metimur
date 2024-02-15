@@ -95,7 +95,7 @@ USER_NAME = ""
 
 * AUTH_TOKEN: aka Databricks [personal access token](https://docs.databricks.com/en/workspace/workspace-details.html)
 
-* WAREHOUSE_ID: This warehouse should be already exists in your workspace. From Databricks workspace, go to `SQL Warhouses`, choose your warehouse, `Connection details`, the warehouse ID is the last part of HTTP path `/sql/1.0/warehouses/<warehouse_id>` OR create a new warehouse
+* WAREHOUSE_ID: Use an already-existed warehouse or create a new one in your Databricks workspace before proceeding. From Databricks workspace, go to `SQL Warhouses`, choose your warehouse, `Connection details`, the warehouse ID is the last part of HTTP path `/sql/1.0/warehouses/<warehouse_id>`
 
 * CATALOG and SCHEMA: of the tables you want to query
 
@@ -126,13 +126,14 @@ python quickstarts_restapi_standalone.py
 ![download ouput](assets/download_example.png)
 
 **Benchmark Example Output**
-The average query duration will show in your terminal as below
+The average query duration will show in your terminal similar to below:
 ```
          duration
 query            
 Q1     811.776923
 Q2     657.579487
 Q3     420.361538
+...
 ```
 
 
