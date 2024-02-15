@@ -1,5 +1,7 @@
-# Databricks Serverless SQL Accelerator
-![brick](./assets/brick.png)
+# Metimur 
+Databricks Serverless SQL Accelerator
+
+![lemur](./assets/lemur1.png)
 
 ## Table of Contents
 1. [About the Accelerator](#about-the-accelerator)
@@ -140,11 +142,5 @@ Q3     420.361538
 
 The **advanced** notebook provides a convenient way to:  
 1. Generate Data
-* Industry benchmark data (TPCH and TPCDS)  (if not exists) 
-* Or generate your own sample data with available schemas
+* Generate your own sample data with available schemas
 2. Execute queries concurrently using [Databricks SQL Connector](https://docs.databricks.com/en/dev-tools/python-sql-connector.html) on existing data, and easily benchmark the duration of each query on Serverless, Pro, and Serverless warehouses
-
-
-
-
-
