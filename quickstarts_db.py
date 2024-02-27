@@ -77,7 +77,7 @@ dbutils.widgets.dropdown(name="benchmark_choice", defaultValue="one-warehouse", 
 
 dbutils.widgets.text(name="warehouse_prefix", defaultValue="Benchmarking", label="warehouse_prefix")
 dbutils.widgets.dropdown(name="warehouse_type", defaultValue="serverless", choices=["serverless", "pro", "classic"], label="warehouse_type")
-dbutils.widgets.dropdown(name="warehouse_size", defaultValue="Small", choices=["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"], label="warehouse_size")
+dbutils.widgets.dropdown(name="warehouse_size", defaultValue="Small", choices=VALID_WAREHOUSES, label="warehouse_size")
 
 dbutils.widgets.text(name="catalog_name", defaultValue="samples", label="catalog_name")
 dbutils.widgets.text(name="schema_name", defaultValue="tpch", label="schema_name")
