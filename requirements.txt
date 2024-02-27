@@ -6,3 +6,4 @@ databricks-sdk
 pyarrow
 httpx
 ./scripts/beaker-0.0.6-py3-none-any.whl
+plotly

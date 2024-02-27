@@ -5,3 +5,4 @@ setup.py
 beaker
 myvenv
 download/*
+queries/adp

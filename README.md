@@ -1,5 +1,13 @@
 # Metimur 
-Databricks Serverless SQL Accelerator
+
+Metimur means "We Measure" in Latin. Its main objectives are:
+
+* Automating data generation and query benchmarking
+* Removing dependencies on active sensitive data by generating synthetic data based on schemas
+* Suggesting optimization techniques
+* Benchmark queries performance in Databricks Serverless SQL
+
+This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) package for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) package for query benchmarking 
 
 ![lemur](./assets/lemur1.png)
 
@@ -10,16 +18,6 @@ Databricks Serverless SQL Accelerator
     * [Quickstarts DB](#quickstarts-db)
     * [Quickstarts Restapi](#quickstarts-restapi)
 4. [Advanced](#advanced)
-
-## About the Accelerator
-
-* Automating data generation and query benchmarking
-* Removing dependencies on customer data access
-* Suggesting optimization techniques
-* Benchmark queries performance in Databricks Serverless SQL
-
-This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) package for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) package for query benchmarking 
-
 
 
 ## Requirements
