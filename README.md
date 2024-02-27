@@ -2,12 +2,11 @@
 
 Metimur means "We Measure" in Latin. Its main objectives are:
 
+* Benchmark queries performance in Databricks Serverless SQL
 * Automating data generation and query benchmarking
 * Removing dependencies on active sensitive data by generating synthetic data based on schemas
-* Suggesting optimization techniques
-* Benchmark queries performance in Databricks Serverless SQL
 
-This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) package for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) package for query benchmarking 
+This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking 
 
 ![lemur](./assets/lemur1.png)
 
@@ -50,13 +49,19 @@ With one-warehouse option, you can view the average duration of each query in th
 
 ![quickstarts one warehouse](./assets/quickstarts_onewh.png)
 
-When the multiple warehouses option is enabled, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_name widget.
+When the `multiple-warehouses` option is enabled, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_prefix widget.
 
 ![warehouse startup time](./assets/warehouses_startup.png)
 
 ![warehouse metrics](./assets/warehouses_metrics.png)
 
-**The query duration is fetched from Query History API and should be consistent with query duration on Databricks monitoring UI**
+When the multiple-warehouses-size option is enabled, you will be prompted to choose the warehouse sizes. These warehouse will be created with have the same type based on warehouse_type widget and their names will be prefixed with the warehouse_prefix widget.
+
+![warehouse size choice](./assets/warehouse_size_choices.png)
+
+![warehouse size](./assets/warehouses_size.png)
+
+**Note: The query duration is fetched from Query History API and should be consistent with query duration on Databricks monitoring UI**
 
 ### Quickstarts RestAPI
 
@@ -86,6 +91,7 @@ CATALOG=samples
 SCHEMA=tpch
 USER_NAME = ""
 ```
+
 <details>
 <summary>Instructions to obtain the above values</summary>
 
@@ -100,7 +106,6 @@ USER_NAME = ""
 * USER_NAME: the user name you used to access the workspace and run the queries
 
 </details>
-
 
 4. Create a python virtual environment, and install required packages. In your terminal inside your cloned directory, run the following:
 ```
