@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC The notebook provides a convenient way to benchmark and measure query response time across different configurations of SQL Severless Warehouse. You can evaluate query performance with varying warehouse sizes or different warehouse types such as Serverless, Pro, or Classic.
 # MAGIC
-# MAGIC To use this quickstart notebook, you should have existing data in Databricks workspace
+# MAGIC > You should have existing data available in the workspace to proceed. If you don't have available data, the default data used in the notebook is tpch data in samples catalog along with tpch sample queries in queries folder of this repo. If you want to use TPCH and TPCDS data with different scale factor, or generate your own data with defined schema, go to Advanced section.
 # MAGIC
 # MAGIC ## Getting Started
 # MAGIC
