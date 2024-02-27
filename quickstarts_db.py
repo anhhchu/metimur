@@ -18,13 +18,19 @@
 # MAGIC
 # MAGIC * benchmarks: (please ignore)
 # MAGIC
-# MAGIC * benchmark_choice: This parameter allows you to choose between running the benchmark on a single warehouse ("one-warehouse") or multiple warehouses ("multiple-warehouses"). The default warehouse specification (for `one-warehouse` option) can be chosen from below. If you choose `multiple-warehouses` option, you will run benchmark on serverless, classic, pro warehouse with the same size
+# MAGIC * benchmark_choice: This parameter allows you to choose between running the benchmark on a single warehouse ("one-warehouse") or multiple warehouses ("multiple-warehouses"). The default warehouse specification (for `one-warehouse` option) can be chosen from below. 
 # MAGIC
-# MAGIC   * warehouse_prefix: This parameter specifies the name prefix of the warehouse. When running the benchmark, the warehouse size and type will be attached to the warehouse_name before spinning up warehouse
+# MAGIC   * If you choose `multiple-warehouses` option, you will run benchmark on serverless, classic, pro warehouse with the same size
+# MAGIC   
+# MAGIC   * If you choose `multiple-warehouses-size` option, you will run benchmark on multiple warehouses with different sizes. You will have the option to specify the warehouse sizes in Cell 7 on this notebook
 # MAGIC
-# MAGIC   * warehouse_type: This parameter allows you to select the type of warehouse for the benchmark. The available options are "serverless", "pro", and "classic".
+# MAGIC Specify the warehouse info:
 # MAGIC
-# MAGIC   * warehouse_size: This parameter determines the size of the warehouse. You can choose from different predefined sizes such as "2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", and "4X-Large".
+# MAGIC * warehouse_prefix: This parameter specifies the name prefix of the warehouse. When running the benchmark, the warehouse size and type will be attached to the warehouse_name before spinning up warehouse
+# MAGIC
+# MAGIC * warehouse_type: This parameter allows you to select the type of warehouse for the benchmark. The available options are "serverless", "pro", and "classic".
+# MAGIC
+# MAGIC * warehouse_size: This parameter determines the size of the warehouse. You can choose from different predefined sizes such as "2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", and "4X-Large".
 # MAGIC
 # MAGIC Specify the location of your existing data below:
 # MAGIC
@@ -36,9 +42,9 @@
 # MAGIC
 # MAGIC * query_path: This parameter specifies the path to the query file or directory containing the benchmark queries.
 # MAGIC
-# MAGIC * query_repetition_count: This parameter determines the number of times each query in the benchmark will be executed.
-# MAGIC
 # MAGIC Specify the concurrency level, cluster size, and whether to enable result cache:
+# MAGIC
+# MAGIC * query_repetition_count: This parameter determines the number of times each query in the benchmark will be executed.
 # MAGIC
 # MAGIC * concurrency: This parameter sets the level of concurrency, indicating how many queries can be executed simultaneously.
 # MAGIC
