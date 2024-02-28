@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC The notebook provides a convenient way to benchmark and measure query response time across different configurations of SQL Severless Warehouse. You can evaluate query performance with varying warehouse sizes or different warehouse types such as Serverless, Pro, or Classic.
 # MAGIC
-# MAGIC > You should have existing data available in the workspace to proceed. If you don't have available data, the default data used in the notebook is tpch data in samples catalog along with tpch sample queries in queries folder of this repo. If you want to use TPCH and TPCDS data with different scale factor, or generate your own data with defined schema, go to Advanced section.
+# MAGIC > You should have existing data available in the workspace to proceed. If you don't have available data, the default data used in the notebook is tpch data in samples catalog along with tpch sample queries in queries folder of this repo.
 # MAGIC
 # MAGIC ## Getting Started
 # MAGIC
@@ -90,10 +90,10 @@ dbutils.widgets.text(name="schema_name", defaultValue="tpch", label="schema_name
 
 #Specify your query file location
 dbutils.widgets.text(name="query_path", defaultValue="./queries/tpch", label="query_path")
-dbutils.widgets.dropdown(name="query_repetition_count", defaultValue="10", choices=[str(x) for x in range(1,101)], label="query_repetition_count")
+dbutils.widgets.dropdown(name="query_repetition_count", defaultValue="1", choices=[str(x) for x in range(1,101)], label="query_repetition_count")
 
-dbutils.widgets.text(name="concurrency", defaultValue="5", label="concurrency")
-dbutils.widgets.text(name="max_clusters", defaultValue="5", label="max_clusters")
+dbutils.widgets.text(name="concurrency", defaultValue="1", label="concurrency")
+dbutils.widgets.text(name="max_clusters", defaultValue="1", label="max_clusters")
 dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", choices = ["True", "False"], label="results_cache_enabled")
 
 # COMMAND ----------
@@ -201,6 +201,7 @@ def run_benchmark(warehouse_prefix, warehouse_type=warehouse_type, warehouse_siz
     
     metrics_pdf = bm.execute()
     bm.sql_warehouse.close_connection()
+    bm.stop_warehouse(bm.warehouse_id)
     return  metrics_pdf
 
 
