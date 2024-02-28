@@ -45,17 +45,17 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 #### Output
 
-With one-warehouse option, you can view the average duration of each query in the query file
+With **one-warehouse** benchmark option, you can view the average duration of each query in the query file
 
 ![quickstarts one warehouse](./assets/quickstarts_onewh.png)
 
-When the `multiple-warehouses` option is enabled, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_prefix widget.
+With **multiple-warehouses** benchmark optiond, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_prefix widget.
 
 ![warehouse startup time](./assets/warehouses_startup.png)
 
 ![warehouse metrics](./assets/warehouses_metrics.png)
 
-When the multiple-warehouses-size option is enabled, you will be prompted to choose the warehouse sizes. These warehouse will be created with have the same type based on warehouse_type widget and their names will be prefixed with the warehouse_prefix widget.
+With **multiple-warehouses-size** benchmark option, you will be prompted to choose the warehouse sizes. These warehouse will be created with have the same type based on warehouse_type widget and their names will be prefixed with the warehouse_prefix widget.
 
 ![warehouse size choice](./assets/warehouse_size_choices.png)
 
