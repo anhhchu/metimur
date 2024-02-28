@@ -8,7 +8,7 @@ Metimur means "We Measure" in Latin. Its main objectives are:
 
 This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking 
 
-![lemur](./assets/lemur1.png)
+![lemur](./assets/lemur_lab.png)
 
 ## Table of Contents
 1. [About the Accelerator](#about-the-accelerator)
