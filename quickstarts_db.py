@@ -2,9 +2,7 @@
 # MAGIC %md 
 # MAGIC # Purpose
 # MAGIC
-# MAGIC This quickstart notebook demonstrates the usage of the [Databricks SQL Connector](https://docs.databricks.com/en/dev-tools/python-sql-connector.html) to execute queries concurrently.
-# MAGIC
-# MAGIC The notebook provides a convenient way to benchmark and measure query response time across different configurations of SQL Severless Warehouse. You can evaluate query performance with varying warehouse sizes or different warehouse types such as Serverless, Pro, or Classic.
+# MAGIC The notebook provides a convenient way to benchmark and measure query response time across different configurations of SQL Severless Warehouse using [Databricks SQL Connector](https://docs.databricks.com/en/dev-tools/python-sql-connector.html). You can quickly evaluate query performance with varying warehouse sizes or different warehouse types such as Serverless, Pro, or Classic.
 # MAGIC
 # MAGIC > You should have existing data available in the workspace to proceed. If you don't have available data, the default data used in the notebook is tpch data in samples catalog along with tpch sample queries in queries folder of this repo.
 # MAGIC
@@ -117,7 +115,7 @@ results_cache_enabled = False if dbutils.widgets.get("results_cache_enabled") ==
 # COMMAND ----------
 
 if benchmark_choice == "multiple-warehouses-size":
-  print("Enter warehouse sizes separates by comma (ie. 2X-Small, X-Small, Small, Medium, Large, X-Large, 2X-Large, 3X-Large, 4X-Large)")
+  print("Enter warehouse sizes separates by comma (i.e. 2X-Small, X-Small, Small, Medium, Large, X-Large, 2X-Large, 3X-Large, 4X-Large)")
   sizes = input("warehouse sizes: ")
   warehouses = set([size.strip() for size in sizes.strip().split(",")])
   invalid_warhouses = warehouses - set(VALID_WAREHOUSES)
@@ -148,23 +146,23 @@ from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 logger.setLevel(logging.INFO)
 
-def run_benchmark(warehouse_prefix, warehouse_type=warehouse_type, warehouse_size=warehouse_size):
+def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
 
-    warehouse_prefix = f"{warehouse_prefix} {warehouse_type} {warehouse_size}"
+    warehouse_name = f"{warehouse_prefix} {warehouse_type} {warehouse_size}"
     # Get warehouse id
-    warehouse_id = get_warehouse(HOSTNAME, TOKEN, warehouse_prefix)
+    warehouse_id = get_warehouse(HOSTNAME, TOKEN, warehouse_name)
 
     if warehouse_id:
         # Use your own warehouse
-        print(f"--Use current warehouse `{warehouse_prefix}` {warehouse_id}--")
+        print(f"--Use current warehouse `{warehouse_name}` {warehouse_id}--")
         http_path = f"/sql/1.0/warehouses/{warehouse_id}"
         new_warehouse_config = None
     else:
         # Specify a new warehouse
         http_path = None
-        print(f"--Specify new warehouse `{warehouse_prefix}`--")
+        print(f"--Specify new warehouse `{warehouse_name}`--")
         new_warehouse_config = {
-            "name": warehouse_prefix,
+            "name": warehouse_name,
             "type": "warehouse",
             "warehouse": warehouse_type,
             "runtime": "latest",
@@ -205,10 +203,17 @@ def run_benchmark(warehouse_prefix, warehouse_type=warehouse_type, warehouse_siz
     return  metrics_pdf
 
 
-def run_multiple_benchmarks(warehouse_prefix):
+def run_multiple_benchmarks():
+    """
+    Run multiple benchmarks for different warehouse types.
+    
+    Returns:
+    - combined_metrics_pdf (pandas.DataFrame): A Pandas DataFrame containing the combined metrics results from all the benchmarks.
+    """
+
     with ThreadPoolExecutor(max_workers=3) as executor:
         warehouse_types = ["serverless", "pro", "classic"]
-        futures = [executor.submit(run_benchmark, warehouse_prefix, warehouse_type) for warehouse_type in warehouse_types]
+        futures = [executor.submit(run_benchmark, warehouse_type) for warehouse_type in warehouse_types]
         wait(futures, return_when=ALL_COMPLETED)
     
     combined_metrics_pdf = pd.DataFrame()
@@ -220,9 +225,18 @@ def run_multiple_benchmarks(warehouse_prefix):
 
     return combined_metrics_pdf
 
-def run_multiple_benchmarks_size(warehouse_prefix, warehouse_sizes):
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [executor.submit(run_benchmark, warehouse_prefix, warehouse_type, warehouse_size) for warehouse_size in warehouse_sizes]
+def run_multiple_benchmarks_size(warehouse_sizes):
+    """
+    Run multiple benchmarks for different warehouse sizes.
+    
+    Parameters:
+    - warehouse_sizes (list): A list of warehouse sizes to be benchmarked.
+    
+    Returns:
+    - combined_metrics_pdf (pandas.DataFrame): A Pandas DataFrame containing the combined metrics results from all the benchmarks.
+    """
+    with ThreadPoolExecutor(max_workers=len(warehouse_sizes)) as executor:
+        futures = [executor.submit(run_benchmark, warehouse_type, warehouse_size) for warehouse_size in warehouse_sizes]
         wait(futures, return_when=ALL_COMPLETED)
     
     combined_metrics_pdf = pd.DataFrame()
@@ -237,13 +251,13 @@ def run_multiple_benchmarks_size(warehouse_prefix, warehouse_sizes):
 # COMMAND ----------
 
 if benchmark_choice == "one-warehouse":
-  metrics_pdf = run_benchmark(warehouse_prefix, warehouse_type)
+  metrics_pdf = run_benchmark(warehouse_type)
 
 elif benchmark_choice == "multiple-warehouses":
-  metrics_pdf = run_multiple_benchmarks(warehouse_prefix)
+  metrics_pdf = run_multiple_benchmarks()
 
 elif benchmark_choice == "multiple-warehouses-size":
-  metrics_pdf = run_multiple_benchmarks_size(warehouse_prefix, warehouse_sizes)
+  metrics_pdf = run_multiple_benchmarks_size(warehouse_sizes)
 
 # COMMAND ----------
 
