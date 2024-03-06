@@ -49,130 +49,10 @@ schema_path = dbutils.widgets.get("schema_path")
 
 # COMMAND ----------
 
-def import_schema(catalog, schema, schema_path):
-    """
-    Given a directory, this function imports all schema files in csv
-    format and returns a dictionary mapping the table name (in the
-    format 'catalog.db.table') to the table schema.
-    
-    Parameters:
-    schema_path (str): the path of the directory containing schema files.
-    
-    Returns:
-    (dict): a dictionary mapping table name to table schema, where the
-    table schema is a list of dictionaries, each representing a column
-    in the table and its properties.
-    """
-    table_schemas = {}
-
-    for filename in os.listdir(schema_path):
-      # for each table in schema_path, import table_schema
-      if filename.endswith('.csv'):
-        table_name = filename.split('.')[0]
-        table = f"{catalog}.{schema}.{table_name}"
-
-        with open(os.path.join(schema_path, filename), 'r') as csv_file:
-          csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
-          table_schema = []
-
-          for row in csv_reader:
-            # process the row
-            row = process_row(row)
-
-            # add the row to the table schema
-            table_schema.append(row)
-
-        table_schemas[table] = table_schema
-
-    return table_schemas
-
-def process_row(row):
-    """
-    This function preprocesses a row of a table schema. It modifies (in place)
-    the row's fields such that each value has the expected data type
-  
-    Args:
-    row (dict): a dictionary representing the current row being processed. The keys
-    of the dictionary represent properties of the column in the schema, and the values
-    represent the values parsed from the csv file.
-
-    Returns:
-    dict: the preprocessed row.
-    """
-    # remove empty fields and strip whitespaces
-    row = {k: v.strip() for k, v in row.items() if v.strip()}
-
-    # convert number values to int/float
-    for key in ['minValue', 'maxValue', 'step', 'percentNulls']:
-        if key in row:
-            row[key] = float(row[key])
-    
-    if row.get('uniqueValues'):
-        row['uniqueValues'] = int(row['uniqueValues'])
-
-    # process random and omit fields
-    row['random'] = row.get('random', 'False').lower() == 'true'
-    row['omit'] = row.get('omit', 'False').lower() == 'true'
-
-    # split the baseColumn to list
-    if row.get('baseColumn'):
-        row['baseColumn'] = [val.strip() for val in row['baseColumn'].split(',')]
-
-    # convert distribution column to function
-    if row.get('distribution'):
-        row['distribution'] = eval(row['distribution'])
-
-    # convert text column to function
-    if row.get('text'):
-      if row['text'].startswith('fakerText'):
-        row['text'] = eval(row['text'])
-      else:
-        print('text field not valid')
- 
-    if row.get('values'):
-        row['values'] = [val.strip() for val in row['values'].split(',')]
-
-    if row.get('weights'):
-        row['weights'] = [int(val.strip()) for val in row['weights'].split(',')]
-
-    # convert begin and end from string to datetime
-    if row.get('begin') or row.get('end'):
-        row['data_range'] = dg.DateRange(row.get('begin'), row.get('end'), row.get('interval'))     
-
-    # drop unused keys
-    row.pop('list_len', None)
-    row.pop('word_len', None)
-    row.pop('masked', None)
-    row.pop('comments', None)
-    row.pop('begin', None)
-    row.pop('end', None)
-    row.pop('interval', None)
-
-    return row
-
-
-def is_valid_date(date_string):
-    try:
-        datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
-        return True
-    except ValueError:
-        return False
-      
-
-def generate_delta_table(rows, table, table_schema):
-    """Create a delta table with mockup data from database with specified number of rows
-
-    Args:
-        rows (int): The number of rows in the table
-        table (str): The name of the delta table database.delta_table
-        table_schema (list): A nested list of dictionaries representing the schema for the table
-
-    Returns:
-        None
-    """
+def generate_dataframe(rows, table, table_schema):
 
     # Create a DataGenerator instance
-    df_spec = dg.DataGenerator(spark, name=table, rows=rows, random=True, randomSeed=42)
+    df_spec = dg.DataGenerator(spark, name=table, rows=rows, partition=4, random=True, randomSeed=42)
 
     # # Use the withIdOutput() method to retain the id field in the output data
     # df_spec.withIdOutput()
@@ -188,9 +68,11 @@ def generate_delta_table(rows, table, table_schema):
     end_time = time.perf_counter()
     build_time = round(end_time - start_time, 2)
     print(f"---Dataframe of {count} rows, built in {build_time} seconds---")
+    return df
 
+def generate_delta_table(df, table_name):
     # Save the dataframe to Delta
-    print(f"---Save table to Delta---")
+    print(f"---Save table {table_name} to Delta---")
     start_time = time.perf_counter()
 
     delta_options = {
@@ -198,43 +80,38 @@ def generate_delta_table(rows, table, table_schema):
         'overwriteSchema': True,
     }
         
-    df.write.format("delta").mode("overwrite").options(**delta_options).saveAsTable(table)
+    df.write.format("delta").mode("overwrite").options(**delta_options).saveAsTable(f"{catalog_name}.{schema_name}.{table_name}")
     end_time = time.perf_counter()
     print(f"Write in {round(end_time - start_time, 2)} seconds---")
 
 # COMMAND ----------
 
-# DBTITLE 1,Import schema definition file
-table_schemas = import_schema(catalog_name, schema_name, schema_path)
-tables = list(table_schemas.keys())
-tables
+def get_files_from_dir(schema_path, type="json"):
+  # Get a list of all files in the schema_path directory
+  file_list = os.listdir(schema_path)
+
+  # Filter out the JSON files
+  files = [file for file in file_list if file.endswith(type)]
+  return files
+
+files = get_files_from_dir(schema_path)
+files
 
 # COMMAND ----------
 
-# DBTITLE 1,Set table rows
-output_rows = {}
-for table in table_schemas.keys():
-  rows = input(f"rows for table {table}")
-  output_rows[table] = int(rows)
+import json
 
-# COMMAND ----------
+for file_name in files:
+  with open(os.path.join(schema_path, file_name), "r") as file:
+    json_data = json.load(file)
 
-table_schemas["serverless_benchmark.demos.events"]
+  # Extract the table name, rows, and fields from the parsed JSON data
+  table_name = json_data["table_name"]
+  rows = json_data["rows"]
+  fields = json_data["fields"]
 
-# COMMAND ----------
+  fields = [{key: value for key, value in field.items() if value is not None and value != []} for field in fields]
 
-# DBTITLE 1,Generate Delta Tables
-for table in tables:
-  sc.setJobDescription(f"Generate table {table}") 
-  print(f"**Data generation for {table}**")
-  generate_delta_table(output_rows[table], table, table_schemas[table])
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC show tables
-
-# COMMAND ----------
-
-for table in tables:
-  spark.sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS FOR ALL COLUMNS;")
+  # Call the generate_delta_table function
+  df = generate_dataframe(rows, table_name, fields)
+  generate_delta_table(df, table_name)

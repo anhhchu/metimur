@@ -136,15 +136,13 @@ def is_valid_date(date_string):
         return False
       
 
-def generate_delta_table(rows, table, table_schema, delta_tokenh):
+def generate_delta_table(rows, table, table_schema):
     """Create a delta table with mockup data from database with specified number of rows
 
     Args:
         rows (int): The number of rows in the table
         table (str): The name of the delta table database.delta_table
         table_schema (list): A nested list of dictionaries representing the schema for the table
-        delta_tokenh (str): The tokenh to the storage location for delta files
-
     Returns:
         None
     """

@@ -57,7 +57,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -r requirements.txt
+# MAGIC %pip install -r requirements.txt -q
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -66,6 +66,7 @@
 from utils.func import *
 import pandas as pd
 import logging
+from beaker import benchmark
 
 logger = logging.getLogger()
 
@@ -172,7 +173,7 @@ def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
             "enable_photon": True,
         }
 
-    bm = Benchmark()
+    bm = benchmark.Benchmark()
     bm.setName(f"{benchmarks}_{warehouse_type}")
     bm.setHostname(HOSTNAME)
     bm.setWarehouseToken(TOKEN)
@@ -296,7 +297,3 @@ fig.update_layout(
 
 # Display the chart
 fig.show()
-
-# COMMAND ----------
-
-
