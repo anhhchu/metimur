@@ -21,16 +21,47 @@ from databricks.sdk import WorkspaceClient
 import math
 
 
-# Import beaker 
-# from beaker.benchmark import Benchmark
-from beaker import Benchmark
-
-
 # Util for creating string lists of varying word lengths  
 def get_random_strings_list(list_len, word_len):
   """Returns a list of random strings."""
   return list(map(lambda x: ''.join(random.choices(string.ascii_uppercase + string.digits, k=word_len)), range(list_len)))
 
+def import_schema(catalog, schema, schema_path):
+    """
+    Given a directory, this function imports all schema files in csv
+    format and returns a dictionary mapping the table name (in the
+    format 'catalog.db.table') to the table schema.
+    
+    Parameters:
+    schema_path (str): the path of the directory containing schema files.
+    
+    Returns:
+    (dict): a dictionary mapping table name to table schema, where the
+    table schema is a list of dictionaries, each representing a column
+    in the table and its properties.
+    """
+    table_schemas = {}
+
+    for filename in os.listdir(schema_path):
+      # for each table in schema_path, import table_schema
+      if filename.endswith('.csv'):
+        table_name = filename.split('.')[0]
+        table = f"{catalog}.{schema}.{table_name}"
+
+        with open(os.path.join(schema_path, filename), 'r') as csv_file:
+          csv_reader = csv.DictReader(csv_file, skipinitialspace=True)
+          table_schema = []
+
+          for row in csv_reader:
+            # process the row
+            row = process_row(row)
+
+            # add the row to the table schema
+            table_schema.append(row)
+
+        table_schemas[table] = table_schema
+
+    return table_schemas
 
 def process_row(row):
     """
@@ -160,110 +191,6 @@ def get_warehouse(hostname, token, warehouse_name):
         return(warehouse['id'])
   else:
     print(f"Error: {response.json()['error_code']}, {response.json()['message']}")
-
-
-# def get_query_history(hostname, token, warehouse_id, start_ts_ms):
-#   """
-#   Retrieves the Query History for a given workspace and Data Warehouse.
-
-#   Parameters:
-#   -----------
-#   workspaceName (str): The workspace URL where the Data Warehouse is located.
-#   token(str): The Personal Access Token (token) to access the Databricks API.
-#   warehouse_id (str): The ID of the Data Warehouse for which to retrieve the Query History.
-
-#   Returns:
-#   --------
-#   :obj:`requests.Response`
-#   A Response object containing the results of the Query History API call.
-#   """
-#   ## Put together request 
-
-#   request_string = {
-#       "filter_by": {
-#         "query_start_time_range": {
-#             # "end_time_ms": end_ts_ms,
-#             "start_time_ms": start_ts_ms
-#       },
-#       "statuses": [
-#           "FINISHED"
-#       ],
-#       "warehouse_ids": warehouse_id
-#       },
-#       "include_metrics": "true",
-#       "max_results": "1000"
-#   }
-
-#   ## Convert dict to json
-#   v = json.dumps(request_string)
-
-#   uri = f"https://{hostname}/api/2.0/sql/history/queries"
-#   headers_auth = {"Authorization":f"Bearer {token}"}
-
-#   #### Get Query History Results from API
-#   res = requests.get(uri, data=v, headers=headers_auth)
-#   return res
-
-
-  
-# def get_query_metrics(response, view_name = "demo_query"):
-#     assert (response.status_code == 200), "Failed to achieve query history" 
-#     end_res = response.json()['res']
-#     assert (end_res), "No query history" 
-#     df = spark.createDataFrame( end_res)
-#     df.createOrReplaceTempView(f"{view_name}_hist_view")
-#     print(f"""View Query History at: {view_name}_hist_view""" )
-  
-
-def get_query_history(hostname, token, warehouse_id, start_ts_ms, view_name = "demo_query"):
-  """
-  Retrieves the Query History for a given workspace and Data Warehouse.
-
-  Parameters:
-  -----------
-  hostname (str): The URL of the Databricks workspace where the Data Warehouse is located.
-  token(str): The Personal Access Token (token) to access the Databricks API.
-  warehouse_id (str): The ID of the Data Warehouse for which to retrieve the Query History.
-  start_ts_ms (int): The Unix timestamp (milliseconds) value representing the start of the query history.
-  view_name (str, optional): The name of the view created from the Spark DataFrame containing Query History. Defaults to "demo_query".
-
-  Returns:
-  --------
-  None
-  """
-  ## Put together request 
-  request_string = {
-      "filter_by": {
-        "query_start_time_range": {
-            # "end_time_ms": end_ts_ms,
-            "start_time_ms": start_ts_ms
-      },
-      "statuses": [
-          "FINISHED"
-      ],
-      "warehouse_ids": warehouse_id
-      },
-      "include_metrics": "true",
-      "max_results": "1000"
-  }
-
-  ## Convert dict to json
-  v = json.dumps(request_string)
-
-  uri = f"https://{hostname}/api/2.0/sql/history/queries"
-  headers_auth = {"Authorization":f"Bearer {token}"}
-
-  #### Get Query History Results from API
-  response = requests.get(uri, data=v, headers=headers_auth)
-  
-  if (response.status_code == 200) and ("res" in response.json()):
-    end_res = response.json()['res']
-    df = spark.createDataFrame( end_res)
-    df.createOrReplaceTempView(f"{view_name}_hist_view")
-    print(f"""View Query History at: {view_name}_hist_view""" )
-  else:
-    print("Failed to retrieve query history")
-    
 
 def teardown(catalog, database):
   """

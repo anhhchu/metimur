@@ -4,8 +4,16 @@
 
 # COMMAND ----------
 
+# MAGIC %load_ext autoreload
+
+# COMMAND ----------
+
 # DBTITLE 1,Import Constants
 from constants import *
+
+# COMMAND ----------
+
+dbutils.widgets.removeAll()
 
 # COMMAND ----------
 
@@ -19,10 +27,7 @@ constants = Constants(
   **get_widget_values(dbutils)
 )
 
-# COMMAND ----------
-
-print("Environment variables set:")
-constants
+print(constants)
 
 # COMMAND ----------
 

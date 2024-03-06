@@ -2,6 +2,7 @@ import os
 import math
 from dataclasses import dataclass
 from databricks.sdk.runtime import *
+import logging
 
 ############### Set up tables #############
 
@@ -35,6 +36,9 @@ _TPCDS_TABLE_NAMES = {
 _TPCH_TABLE_NAMES = {"customer", "lineitem", "nation", "orders", "part", "region", "supplier", "partsupp"}
 
 def check_tables_already_exist(spark, catalog: str, schema: str) -> bool:
+    if catalog == "samples":
+        return True
+    
     _TABLE_NAMES = []
     if catalog == "tpcds":
         _TABLE_NAMES = _TPCDS_TABLE_NAMES
@@ -60,6 +64,7 @@ def check_tables_already_exist(spark, catalog: str, schema: str) -> bool:
     return False
 
 def set_up_catalog(spark, catalog:str, schema:str):
+    logging.info("Set up catalog and schema")
     # USE HIVE METASTORE
     if catalog == "hive_metastore":
         spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
@@ -72,42 +77,35 @@ def set_up_catalog(spark, catalog:str, schema:str):
         spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
         spark.sql(f"USE {catalog}.{schema}")
 
-    print(f"Data will be saved at {catalog}.{schema}")
+    logging.info(f"Data will be saved at {catalog}.{schema}")
 
 
 ############### Set up widgets #############
+VALID_WAREHOUSES = ["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"]
 
 # widgets in format (dbutils type, args)
 _WIDGETS = [
+    ("text", ("Warehouse Prefix", "Benchmarking")),
+    ("text", ("Catalog Name", "tpch")),
+    ("text", ("Schema Name", "tpch_sf1_delta")),
+
+    ("text", ("Query Path", "./queries/tpch")),
+    ("text", ("Schema Path", "")),
+    ("text", ("Concurrency", "5")),
+
     ("dropdown", ("Benchmarks", "TPCH", ["TPCH", "TPCDS", "BYOD"])),
-    ("dropdown", ("Benchmark Choice", "one-warehouse", ["one-warehouse", "multiple-warehouses"])),
-    ("text", ("Catalog Name", "hive_metastore")),
-    ("text", ("Schema Name", "tpch")),
-    ("dropdown", ("Scale Factors", "1", ["1", "10", "100", "1000"])),
-    ("text", ("Concurrency", "50")),
-    ("dropdown", ("Query Repetition Count", "30", [str(x) for x in range(1, 101)])),
-    ("text", ("Warehouse Name", "Benchmarking Warehouse")),
+    ("dropdown", ("Benchmark Choice", "one-warehouse", ["one-warehouse", "multiple-warehouses", "multiple-warehouses-size"])),
+    
     ("dropdown", ("Warehouse Type", "serverless", ["serverless", "pro", "classic"])),
-    (
-        "dropdown",
-        (
-            "Warehouse Size",
-            "Small",
-            [
-                "2X-Small",
-                "X-Small",
-                "Small",
-                "Medium",
-                "Large",
-                "X-Large",
-                "2X-Large",
-                "3X-Large",
-                "4X-Large",
-            ],
-        ),
-    ),
+    ("dropdown", ("Warehouse Size", "Small", VALID_WAREHOUSES)),
+    ("dropdown", ("Query Repetition Count", "1", [str(x) for x in range(1, 101)])),
+
     ("dropdown", ("Max Clusters", "2", [str(x) for x in range(1, 41)])),
-    ("dropdown", ("Channel", "Current", ["Preview", "Current"])),
+    ("dropdown", ("Results Cache Enabled", "False", ["True", "False"])),
+
+    ("dropdown", ("Scale Factors", "1", ["1", "10", "100", "1000"]))
+
+    # ("dropdown", ("Channel", "Current", ["Preview", "Current"])),
 ]
 
 def _convert_to_int_safe(s: str):
@@ -132,9 +130,16 @@ def create_widgets(dbutils):
         else:
             raise TypeError(f"{widget_type} type is not supported.")
 
+
+def get_widget_values(dbutils):
+    widgets_dict = {args[0]: dbutils.widgets.get(args[0]) for _, args in _WIDGETS}
+    widgets_cleaned = {k.lower().replace(" ", "_"): v for k, v in widgets_dict.items()}
+
+    return {k: _convert_to_int_safe(v) for k, v in widgets_cleaned.items()}
+
+
 def create_widgets_benchmark(dbutils):
     dbutils.widgets.removeAll()
-
     for widget_type, args in _WIDGETS:
         if args[0] != "Scale Factors":
             if widget_type == "text":
@@ -144,13 +149,11 @@ def create_widgets_benchmark(dbutils):
             else:
                 raise TypeError(f"{widget_type} type is not supported.")
 
-
-def get_widget_values(dbutils):
+def get_widget_values_benchmark(dbutils):
     widgets_dict = {args[0]: dbutils.widgets.get(args[0]) for _, args in _WIDGETS if args[0] != "Scale Factors"}
     widgets_cleaned = {k.lower().replace(" ", "_"): v for k, v in widgets_dict.items()}
 
     return {k: _convert_to_int_safe(v) for k, v in widgets_cleaned.items()}
-
 
 
 
@@ -160,23 +163,25 @@ def get_widget_values(dbutils):
 class Constants:
     ############### Variables dependant upon widgets parameters ##############
 
-    # Name of the catalog to write data to
-    catalog_name: str
+    # Number of times to duplicate the benchmarking run
+    query_repetition_count: int
 
-    # Name of the schema to write data to
-    schema_name: str
+    # Maximum number of clusters
+    max_clusters: int
+
+    # Result Cache Enabled
+    results_cache_enabled: bool
 
     # benchmark option
+    
     benchmarks: str
-
-    # benchmark option
     benchmark_choice: str
 
-    # Number of GBs of data to write
-    scale_factors: int
+    # Number of concurrent threads
+    concurrency: int
 
-    # Name of the warehouse
-    warehouse_name: str
+    # Prefix of the warehouse
+    warehouse_prefix: str
 
     # Type of the warehouse
     warehouse_type: str
@@ -184,17 +189,21 @@ class Constants:
     # Size of the warehouse cluster
     warehouse_size: str
 
-    # Warehouse channel name
-    channel: str
+    # # Warehouse channel name
+    # channel: str
 
-    # Number of concurrent threads
-    concurrency: int
+    # Name of the catalog to write data to
+    catalog_name: str
 
-    # Number of times to duplicate the benchmarking run
-    query_repetition_count: int
+    # Name of the schema to write data to
+    schema_name: str
 
-    # Maximum number of clusters
-    max_clusters: int
+    # Number of GBs of data to write
+    scale_factors: int
+
+    # Path to query 
+    query_path: str
+
 
     ############### Variables independent of user parameters #############
     # Name of the job
@@ -216,7 +225,7 @@ class Constants:
         current_user_email.replace(".", "_").replace("-", "_").split("@")[0]
     )
 
-    # Base directory where all data and queries will be written
+    # Base directory where TPC data and queries will be written
     root_directory = f"dbfs:/Serverless_Benchmarking"
 
     # Additional subdirectories within the above root_directory
@@ -233,16 +242,16 @@ class Constants:
     init_script_path = os.path.join(script_path, "-install.sh")
 
     # Location of the dist whl for beaker
-    beaker_whl_path = os.path.join(script_path, "beaker-0.0.5-py3-none-any.whl")
+    beaker_whl_path = os.path.join(script_path, "beaker-0.0.6-py3-none-any.whl")
 
     # Location of the notebook that creates
     # datagen_notebook_path = os.path.join(
     #     _cwd, "notebooks/tpc_datagen"
     # )
 
-    # Location of the notebook that runs TPC-DS queries against written data using the beaker library
+    # Location of the notebook that runs queries against written data using the beaker library
     run_benchmark_notebook_path = os.path.join(
-        _cwd, "notebooks/run_benchmark"
+        _cwd, "quickstarts_db"
     )
 
     # Name of the current databricks host
@@ -282,13 +291,13 @@ class Constants:
             )
         # BRING YOUR OWN DATA BENCHMARK 
         elif self.benchmarks == "BYOD":
-            self.catalog_name = "serverless_benchmark"
+            self.catalog_name = f"benchmark_{current_user_name}"
             # Validate schema_name       
             assert (self.schema_name != ""), "Specify the schema_name for BYOD (bring your own data) option!"
             self.schema_name = self.schema_name
 
         # Set up catalog and schema
-        set_up_catalog(spark, self.catalog_name, self.schema_name)
+        # set_up_catalog(spark, self.catalog_name, self.schema_name)
 
         # Add schema to data path
         self.data_path = os.path.join(self.data_path, self.schema_name)
@@ -300,9 +309,8 @@ class Constants:
         # Param validations/warnings
         self.max_clusters = self._validate_concurrency_will_utilize_cluster()
 
-        # Set warehouse name
-        self.warehouse_name = f"{self.current_user_name} {self.warehouse_name} {self.warehouse_size}"
-
+        # Set warehouse prefix
+        self.warehouse_prefix = f"{self.current_user_name} {self.warehouse_prefix}"
 
 
 

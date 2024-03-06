@@ -1,0 +1,3 @@
+dbldatagen
+python-dotenv
+faker

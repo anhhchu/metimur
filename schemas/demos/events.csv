@@ -1,4 +1,4 @@
-colName,colType,minValue,maxValue,step,uniqueValues,distribution,baseColumn,cccccbgnfthgevckefdvcjgericlvccjlenjrbitrj,expr,text,format,values,weights,template,begin,end,interval,random,omit,percentNulls
+colName,colType,minValue,maxValue,step,uniqueValues,distribution,baseColumn,expr,text,format,values,weights,template,begin,end,interval,random,omit,percentNulls
 device_id_base,decimal(10),1000,,,50000,,,,,,,,,,,,,TRUE,TRUE,
 device_id,decimal(10),1000000000,,,,,device_id_base,hash,,,,,,,,,,,,
 event_type,string,,,,,,,,,,,"sms, internet, local call, ld call, intl call","50, 50, 20, 10, 5",,,,,TRUE,,
