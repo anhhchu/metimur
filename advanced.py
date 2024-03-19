@@ -11,6 +11,11 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Prepare Variables
+
+# COMMAND ----------
+
 HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
 TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 catalog_name = "serverless_benchmark"
@@ -52,11 +57,14 @@ if constants.benchmarks in ("TPCDS", "TPCH"):
     schema_name = f"{constants.benchmarks.lower()}_sf{constants.scale_factors}_delta_nopartitions"
   else:
     schema_name = f"{constants.benchmarks.lower()}_sf{constants.scale_factors}_delta"
+  print("TPC Data Schema: ", schema_name)
 else:
   schema_name = input("Provide Schema for your generated data: ")
-  schema_path = input("Provide path to the schema file: ")
+  _schema_path = input("Provide the relative path to your schema folder (i.e. schemas/tpch): ")
+  schema_path = os.path.join(constants._cwd, _schema_path)
+  print("Custom Data Schema: ", schema_name)
+  print("Custom Data Schema Path: ", schema_path)
 
-print(schema_name)
 
 # COMMAND ----------
 
@@ -297,6 +305,11 @@ print(
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Clean Up
+
+# COMMAND ----------
+
 # DBTITLE 1,Clean Up
 confirmation = input(f"Do you want to delete the generated job {job_id}: Yes, No:" )
 if confirmation == "Yes":
@@ -313,7 +326,3 @@ if constants.benchmarks == "BYOD":
   confirmation = input("Do you want to delete your generated data: Yes, No:" )
   if confirmation == 'Yes':
     teardown(catalog_name, schema_name)
-
-# COMMAND ----------
-
-

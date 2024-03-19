@@ -113,7 +113,6 @@ _WIDGETS = _WIDGETS_BASE + [
     ("dropdown", ("Benchmarks", "TPCDS", ["TPCH", "TPCDS", "BYOD"])),
     # ("text", ("Catalog Name", "serverless_benchmark")),
     # ("text", ("Schema Name", "")),
-    ("text", ("Schema Path", "")),
     ("dropdown", ("Scale Factors", "1", ["1", "10", "100", "1000"]))
 ]
 
@@ -222,8 +221,8 @@ class Constants:
     # Number of GBs of data to write
     scale_factors: Optional[int] = None
 
-    # Path to schema 
-    schema_path: Optional[str] = None
+    # # Path to schema 
+    # schema_path: Optional[str] = None
 
     # benchmark option
     benchmarks: Optional[str] = None
@@ -316,8 +315,8 @@ class Constants:
 
         if self.query_path:
             self.query_path = os.path.join(self._cwd, self.query_path)
-        if self.schema_path:
-            self.schema_path = os.path.join(self._cwd, self.schema_path)
+        # if self.schema_path:
+        #     self.schema_path = os.path.join(self._cwd, self.schema_path)
 
         # Convert result cache enabled to boolean
         self.results_cache_enabled = False if self.results_cache_enabled == "False" else True
