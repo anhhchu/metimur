@@ -2,51 +2,54 @@
 # MAGIC %md 
 # MAGIC # Purpose
 # MAGIC
-# MAGIC The notebook provides a convenient way to benchmark and measure query response time across different configurations of SQL Severless Warehouse using [Databricks SQL Connector](https://docs.databricks.com/en/dev-tools/python-sql-connector.html). You can quickly evaluate query performance with varying warehouse sizes or different warehouse types such as Serverless, Pro, or Classic.
+# MAGIC The notebook provides a convenient way to benchmark and measure query response time across different settings of Databricks SQL Warehouse using [Databricks SQL Connector](https://docs.databricks.com/en/dev-tools/python-sql-connector.html). You can quickly evaluate query performance with varying warehouse sizes or different warehouse types such as Serverless, Pro, or Classic.
 # MAGIC
-# MAGIC > You should have existing data available in the workspace to proceed. If you don't have available data, the default data used in the notebook is tpch data in samples catalog along with tpch sample queries in queries folder of this repo.
+# MAGIC > You should have existing data available in the workspace to proceed. If you don't have available data, the default data used in the notebook is `tpch` data in samples `catalog` along with `tpch` sample queries in `queries` folder of this repo.
 # MAGIC
 # MAGIC ## Getting Started
 # MAGIC
-# MAGIC 1. Run the "Set up" cells below.
-# MAGIC 2. Update the parameters based on your purpose or keep the default values to see how it works.
-# MAGIC 3. After making the necessary changes, click "Run" or "Run All" to execute the entire notebook with the updated parameters.
+# MAGIC 1. Set Up: Run Each cell under the "Set up" section manually to set up parameters.
+# MAGIC 2. Parameters Update: Update the parameters based on your requirements or keep the default values to observe the functionality.
+# MAGIC 3. Executing the Notebook: After making the necessary changes, you can click "Run" or "Run All" to execute the entire notebook with the updated parameters.
+# MAGIC 4. Warehouses will be stopped right after benchmarking is completed
 # MAGIC
 # MAGIC ## Parameters
 # MAGIC
-# MAGIC * benchmark_choice: This parameter allows you to choose between running the benchmark on a single warehouse ("one-warehouse") or multiple warehouses ("multiple-warehouses"). The default warehouse specification (for `one-warehouse` option) can be chosen from below. 
+# MAGIC 1. Benchmark Choice:
 # MAGIC
-# MAGIC   * If you choose `multiple-warehouses` option, you will run benchmark on serverless, classic, pro warehouse with the same size
-# MAGIC   
-# MAGIC   * If you choose `multiple-warehouses-size` option, you will run benchmark on multiple warehouses with different sizes. You will have the option to specify the warehouse sizes in Cell 7 on this notebook
+# MAGIC * Choose between running the benchmark on a single warehouse ("one-warehouse") or multiple warehouses types("multiple-warehouses") or multiple warehouse sizes ("multiple-warehouses-size").
+# MAGIC   * One Warehouse Specification: For the "one-warehouse" option, select a default warehouse specification: 
+# MAGIC     * warehouse prefix: This parameter specifies the name prefix of the warehouse. When running the benchmark, the warehouse size and type will be attached to the warehouse prefix before spinning up warehouse
 # MAGIC
-# MAGIC Specify the warehouse info:
+# MAGIC     * warehouse type: This parameter allows you to select the type of warehouse for the benchmark. The available options are "serverless", "pro", and "classic".
 # MAGIC
-# MAGIC * warehouse_prefix: This parameter specifies the name prefix of the warehouse. When running the benchmark, the warehouse size and type will be attached to the warehouse_name before spinning up warehouse
+# MAGIC     * Warehouse Size: This parameter determines the size of the warehouse. You can choose from different predefined sizes such as "2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", and "4X-Large".
 # MAGIC
-# MAGIC * warehouse_type: This parameter allows you to select the type of warehouse for the benchmark. The available options are "serverless", "pro", and "classic".
+# MAGIC   * Multiple Warehouse Types ("multiple-warehouses"): Running the benchmark on serverless, classic, and pro warehouses with the same size.
+# MAGIC   * Multiple Warehouses and Sizes ("multiple-warehouses-size"): Running the benchmark on multiple warehouses of the same type with different sizes. You can choose multiple warehouse sizes from the dropdown **Warehouse Size** widget
 # MAGIC
-# MAGIC * warehouse_size: This parameter determines the size of the warehouse. You can choose from different predefined sizes such as "2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", and "4X-Large".
+# MAGIC 4. Query Path:
 # MAGIC
-# MAGIC Specify the location of your existing data below:
+# MAGIC * Specify the path to the query file or directory containing the benchmark queries.
+# MAGIC * For **TPCH** benchmark, default Query Path is `queries/tpch`. 
+# MAGIC * For **TPCDS** benchmark, default Query Path is `queries/tpcds`
+# MAGIC * Query Format: 
+# MAGIC   * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
 # MAGIC
-# MAGIC * catalog_name: This parameter specifies the name of the catalog where the benchmark schema is located.
+# MAGIC ```sql
+# MAGIC --q1--
+# MAGIC select * from table1;
 # MAGIC
-# MAGIC * schema_name: This parameter defines the name of the schema within the catalog where the benchmark tables are stored.
+# MAGIC --q2--
+# MAGIC select * from table2;
+# MAGIC ```
 # MAGIC
-# MAGIC Upload your `queries` to queries folder, and provide the query path below:
+# MAGIC 5. Concurrency Level, Cluster Size, and Result Cache:
 # MAGIC
-# MAGIC * query_path: This parameter specifies the path to the query file or directory containing the benchmark queries.
-# MAGIC
-# MAGIC Specify the concurrency level, cluster size, and whether to enable result cache:
-# MAGIC
-# MAGIC * query_repetition_count: This parameter determines the number of times each query in the benchmark will be executed.
-# MAGIC
-# MAGIC * concurrency: This parameter sets the level of concurrency, indicating how many queries can be executed simultaneously.
-# MAGIC
-# MAGIC * max_clusters: This parameter specifies the maximum number of clusters that the warehouse can be scaled up to. We recommend 1 cluster for 10 concurrent queries (maximum 25 clusters)
-# MAGIC
-# MAGIC * results_cache_enabled (default False): if False the query won't be served from result cache
+# MAGIC * Query Repetition Count: Determines the number of times each query in the benchmark will be executed.
+# MAGIC * Concurrency: Sets the level of concurrency, indicating how many queries can be executed simultaneously.
+# MAGIC * Maximum Clusters: Specifies the maximum number of clusters that the warehouse can be scaled up to. It is recommended to use 1 cluster for every 10 concurrent queries.
+# MAGIC * Result Cache Enabled (default: False): Determines whether the query will be served from the result cache.
 
 # COMMAND ----------
 
