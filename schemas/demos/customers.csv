@@ -1,7 +1,0 @@
-colName,colType,minValue,maxValue,step,uniqueValues,distribution,baseColumn,baseColumnType,expr,text,format,values,weights,template,begin,end,interval,random,omit,percentNulls
-customer_id,decimal(10),1000,,,50000,,,,,,,,,,,,,,,
-customer_name,string,,,,,,,,,fakerText('name'),,,,,,,,,,
-device_id,decimal(10),1000000000,,,,,customer_id,hash,,,,,,,,,,,,
-phone_number,decimal(10),1000000000,,,,,customer_id,hash,,,,,,,,,,,,
-email,string,,,,,,customer_id,,,,%s@example.com,,,,,,,,,
-plan_id,integer,100,,,20,,,,,,,,,,,,,TRUE,,

@@ -1,4 +1,4 @@
-Q01
+--Q01--
 SELECT
   l_returnflag,
   l_linestatus,
@@ -21,7 +21,7 @@ ORDER BY
   l_returnflag,
   l_linestatus;
 
-Q02
+--Q02--
 select
   s_acctbal,
   s_name,
@@ -66,7 +66,7 @@ order by
   s_name,
   p_partkey;
 
-Q03
+--Q03--
 select
   l_orderkey,
   sum(l_extendedprice * (1 - l_discount)) as revenue,
@@ -90,7 +90,7 @@ order by
   revenue desc,
   o_orderdate;
 
-Q04
+--Q04--
 select
   o_orderpriority,
   count(*) as order_count
@@ -113,7 +113,7 @@ group by
 order by
   o_orderpriority;
 
-Q05
+--Q05--
 select
   n_name,
   sum(l_extendedprice * (1 - l_discount)) as revenue
@@ -137,9 +137,9 @@ where
 group by
   n_name
 order by
-  revenue desc 
+  revenue desc;
   
-Q06
+--Q06--
 select
   sum(l_extendedprice * l_discount) as revenue
 from
@@ -151,7 +151,7 @@ where
   and .06 + 0.01
   and l_quantity < 24;
 
-Q07
+--Q07--
 select
   supp_nation,
   cust_nation,
@@ -199,7 +199,7 @@ order by
   cust_nation,
   l_year;
 
-Q08
+--Q08--
 select
   o_year,
   sum(
@@ -241,7 +241,7 @@ group by
 order by
   o_year;
 
-Q09
+--Q09--
 select
   nation,
   o_year,
@@ -275,7 +275,7 @@ order by
   nation,
   o_year desc;
 
-Q10
+--Q10--
 select
   c_custkey,
   c_name,
@@ -308,7 +308,7 @@ group by
 order by
   revenue desc;
 
-Q11
+--Q11--
 select
   ps_partkey,
   sum(ps_supplycost * ps_availqty) as value
@@ -338,7 +338,7 @@ having
 order by
   value desc;
 
-Q12
+--Q12--
 select
   l_shipmode,
   sum(
@@ -370,7 +370,7 @@ group by
 order by
   l_shipmode;
 
-Q13
+--Q13--
 select
   c_count,
   count(*) as custdist
@@ -392,7 +392,7 @@ order by
   custdist desc,
   c_count desc;
 
-Q14
+--Q14--
 select
   100.00 * sum(
     case

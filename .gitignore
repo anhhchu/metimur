@@ -6,3 +6,5 @@ beaker
 myvenv
 download/*
 queries/adp
+.bkup
+extras/.env

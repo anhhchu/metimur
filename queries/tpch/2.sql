@@ -1,4 +1,4 @@
-Q15
+--Q15--
 with revenue0 as (
     select
       l_suppkey as supplier_no,
@@ -31,7 +31,7 @@ where
 order by
   s_suppkey;
 
-Q16
+--Q16--
 select
   p_brand,
   p_type,
@@ -63,7 +63,7 @@ order by
   p_type,
   p_size;
 
-Q17
+--Q17--
 select
   sum(l_extendedprice) / 7.0 as avg_yearly
 from
@@ -82,7 +82,7 @@ where
       l_partkey = p_partkey
   );
 
-Q18
+--Q18--
 select
   c_name,
   c_custkey,
@@ -117,7 +117,7 @@ order by
   o_totalprice desc,
   o_orderdate;
 
-Q19
+--Q19--
 select
   sum(l_extendedprice * (1 - l_discount)) as revenue
 from
@@ -158,7 +158,7 @@ where
     and l_shipinstruct = 'DELIVER IN PERSON'
   );
 
-Q20
+--Q20--
 select
   s_name,
   s_address
@@ -197,7 +197,7 @@ where
 order by
   s_name;
 
-Q21
+--Q21--
 select
   s_name,
   count(*) as numwait
@@ -238,7 +238,7 @@ order by
   numwait desc,
   s_name;
 
-Q22
+--Q22--
 select
   cntrycode,
   count(*) as numcust,
