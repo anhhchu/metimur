@@ -1,11 +1,11 @@
 # Metimur (Databricks SQL Benchmark Accelerator)
 
-Metimur means "We Measure" in Latin. Its main objectives are:
+"Metimur", translating to "We Measure" in Latin, is designed with the following key objectives:
 
-* Benchmark queries performance in Databricks Serverless SQL
-* Automating data generation and query benchmarking
-* Removing dependencies on sensitive data by generating synthetic data based on schemas
-* [Coming Soon] Copy data from other data warehouse systems to Databricks for benchmarking with Databricks SQL
+- Streamlining the process of data generation and query benchmarking
+- Evaluating query performance in Databricks SQL warehouses
+- Eliminating reliance on sensitive data by creating synthetic data based on schemas
+- [In Progress] Transfer data from other data warehouse systems to Databricks for performance comparison with Databricks SQL
 
 This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking 
 
