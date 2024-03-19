@@ -6,3 +6,6 @@ beaker
 myvenv
 download/*
 queries/adp
+.databricks/
+.vscode/
+venv/
