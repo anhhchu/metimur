@@ -9,3 +9,5 @@ queries/adp
 .databricks/
 .vscode/
 venv/
+.bkup
+extras/.env
