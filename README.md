@@ -12,12 +12,18 @@ This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databri
 ![lemur](./assets/lemur_lab.png)
 
 # Table of Contents
-1. [Requirements](#requirements)
-3. [When to Use](#when-to-use)
-    * [Quickstarts DB](#quickstarts-db)
-    * [Quickstarts Restapi](#quickstarts-restapi)
-4. [Advanced](#advanced)
-
+- [Requirements](#requirements)
+- [When to Use](#when-to-use)
+    - [Use Case 1: Benchmark existing data](#use-case-1-benchmark-existing-data)
+        - [Setup](#setup)
+        - [Output](#output)
+    - [Use Case 2: Generate Data](#use-case-2-generate-data)
+        - [Setup](#setup-1)
+        - [Output](#output-1)
+    - [Use Case 3: Benchmark against 3rd-party enterprise data warehouses](#use-case-3-benchmark-against-3rd-party-enterprise-data-warehouses)
+    - [Use Case 4: Use Databricks Execute SQL API](#use-case-4-use-databricks-execute-sql-api)
+        - [Setup](#setup-2)
+        - [Output](#output-2)
 
 # Requirements
 * Databricks workspace with Serverless and Unity Catalog enabled
@@ -61,7 +67,8 @@ With **multiple-warehouses-size** benchmark option, you will be prompted to choo
 **Note: The query duration is fetched from Query History API and should be consistent with query duration on Databricks monitoring UI**
 
 
-## Use Case 2: Benchmark TPC (TPCDS and TPCH) Data Or Bring Your Own Data
+## Use Case 2: Generate Data
+
 You want to test Databricks SQL Warehouses performance at different scale factors of TPC Industry benchmark Data.
 Or you want to generate synthetic data based on predefined schema. 
 
@@ -83,19 +90,22 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 ![workflow](./assets/workflow.png)
 
-In generate_data task, data are generated in Unity Catalog
+In **generate_data** task, data are generated in Unity Catalog
 ![generate data](./assets/generate_data.png)
 
-In the Run_Benchmarking task, benchmark queries are executed on the generated data
+In the **run_benchmarking task**, benchmark queries are executed on the generated data
+
 ![run benchmarking](./assets/run_benchmarking.png)
 
 2. If the TPC data already exists, an automated Workflow job is created with only the Run_Benchmarking task. The Generate_Data task is skipped in this case.
 
 ![workflow_1_task](./assets/workflow_1_task.png)
 
-## [COMING SOON] Use Case 3: Benchmark Databricks Serverless Warehouse against a different data warehouse (Snowflake, Redshift, Synapse) 
+## Use Case 3: Benchmark against 3rd-party enterprise data warehouses 
 
-## Use Case 4: Use [Databricks Execute SQL API](https://docs.databricks.com/api/workspace/statementexecution/executestatement) on local machine
+[COMING SOON] 
+
+## Use Case 4: Use Databricks Execute SQL API
 
 You want to use Databricks warehouses from local machine or an application:
 * execute queries with parameters on Databricks SQL warehouse from your local machine using [Databricks Execute SQL API](https://docs.databricks.com/api/workspace/statementexecution/executestatement). 
@@ -108,9 +118,10 @@ You want to use Databricks warehouses from local machine or an application:
 * Access to Databricks workspace, and permission to create Personal Access Token
 * Access to an existing Databricks SQL Warehouse
 
-### Set up
+### Setup
 
-1. Clone this repo to your local machine, in your terminal `cd metimur/extras/quickstarts_restapi_standalone`
+1. Clone this repo to your local machine, in your terminal 
+* Go to `cd metimur/extras/quickstarts_restapi_standalone`
 
 2. Upload your query file to `queries` folder, replace any required params with `:param_name`. Refer to `tpch_w_param.sql` file for sample queries with params or Databricks [API doc](https://docs.databricks.com/api/workspace/statementexecution/executestatement)
 
