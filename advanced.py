@@ -1,11 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Purpose
+# MAGIC # Instruction
 # MAGIC This notebook simplifies the process of generating TPC (TPCH & TPCDS) industry data or generating data based on a provided schema. Additionally, it enables the execution of query benchmarks on Databricks SQL warehouses with different settings, such as warehouse types, warehouse sizes, and concurrency levels.
 # MAGIC
 # MAGIC ## Getting Started
