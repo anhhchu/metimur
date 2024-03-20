@@ -52,12 +52,10 @@
 # MAGIC   * Multiple Warehouse Types ("multiple-warehouses"): Running the benchmark on serverless, classic, and pro warehouses with the same size.
 # MAGIC   * Multiple Warehouses and Sizes ("multiple-warehouses-size"): Running the benchmark on multiple warehouses of the same type with different sizes. You can choose multiple warehouse sizes from the dropdown **Warehouse Size** widget
 # MAGIC
-# MAGIC 4. Query Path:
-# MAGIC
-# MAGIC * Specify the path to the query file or directory containing the benchmark queries.
+# MAGIC 4. Query Path: Specify the path to the query file or directory containing the benchmark queries.
 # MAGIC * For **TPCH** benchmark, default Query Path is `queries/tpch`. 
 # MAGIC * For **TPCDS** benchmark, default Query Path is `queries/tpcds`
-# MAGIC * Query Format: 
+# MAGIC * For **BYOD** benchmark, upload the queries to a separate folder under **queries** directory
 # MAGIC   * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
 # MAGIC
 # MAGIC ```sql
