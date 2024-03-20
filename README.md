@@ -1,11 +1,10 @@
 # Metimur (Databricks SQL Benchmark Accelerator)
 
-"Metimur", translating to "We Measure" in Latin, is designed with the following key objectives:
+"Metimur", translating to "We Measure", is designed with the following key objectives:
 
 - Streamlining the process of data generation and query benchmarking
 - Evaluating query performance in Databricks SQL warehouses
-- Eliminating reliance on sensitive data by creating synthetic data based on schemas
-- [In Progress] Transfer data from other data warehouse systems to Databricks for performance comparison with Databricks SQL
+- Eliminating reliance on sensitive data by creating synthetic data based on table schemas
 
 This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking 
 
@@ -17,13 +16,15 @@ This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databri
     - [Use Case 1: Benchmark existing data](#use-case-1-benchmark-existing-data)
         - [Setup](#setup)
         - [Output](#output)
-    - [Use Case 2: Generate Data](#use-case-2-generate-data)
+    - [Use Case 2: Generate Data from Schema](#use-case-2-generate-data)
         - [Setup](#setup-1)
         - [Output](#output-1)
-    - [Use Case 3: Benchmark against 3rd-party enterprise data warehouses](#use-case-3-benchmark-against-3rd-party-enterprise-data-warehouses)
-    - [Use Case 4: Use Databricks Execute SQL API](#use-case-4-use-databricks-execute-sql-api)
+    - [Use Case 3: Generate TPC Data](#use-case-3-generate-data)
         - [Setup](#setup-2)
         - [Output](#output-2)
+    - [Use Case 3: Use Databricks Execute SQL API](#use-case-4-use-databricks-execute-sql-api)
+        - [Setup](#setup-3)
+        - [Output](#output-3)
 
 # Requirements
 * Databricks workspace with Serverless and Unity Catalog enabled
@@ -48,7 +49,7 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 ### Output
 
-With **one-warehouse** benchmark option, you can view the average duration of each query in the query file
+With **one-warehouse** benchmark option, you can view the average duration of each query
 
 ![quickstarts one warehouse](./assets/quickstarts_onewh.png)
 
@@ -58,7 +59,7 @@ With **multiple-warehouses** benchmark option, three types of warehouses - serve
 
 ![warehouse metrics](./assets/warehouses_metrics.png)
 
-With **multiple-warehouses-size** benchmark option, you will be prompted to choose the warehouse sizes. These warehouse will be created with have the same type based on warehouse_type widget and their names will be prefixed with the warehouse_prefix widget.
+With **multiple-warehouses-size** benchmark option, you can choose multiple warehouse sizes from the drop down **warehouse_size** widget. These warehouse will be created with have the same type based on **warehouse_type** widget and their names will be prefixed with the **warehouse_prefix** widget.
 
 ![warehouse size choice](./assets/warehouse_size_choices.png)
 
@@ -67,22 +68,49 @@ With **multiple-warehouses-size** benchmark option, you will be prompted to choo
 **Note: The query duration is fetched from Query History API and should be consistent with query duration on Databricks monitoring UI**
 
 
-## Use Case 2: Generate Data
+## Use Case 2: Generate Synthectic Data based on table schemas
 
-You want to test Databricks SQL Warehouses performance at different scale factors of TPC Industry benchmark Data.
-Or you want to generate synthetic data based on predefined schema. 
-
-The **advanced** notebook provides a convenient way to:  
-1. Generate TPC Data or synthetic data based on different scale factor
-2. Execute queries concurrently using [Databricks SQL Connector](https://docs.databricks.com/en/dev-tools/python-sql-connector.html) and easily benchmark the query duration on Databricks SQL Warehouses
+You want to generate synthetic data based on table schemas, and benchmark the query duration at different concurrency levels on Databricks SQL Warehouses
 
 ### Setup
 
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
 1. Open **advanced** notebook on Databricks workspace.
-2. Follow the instruction in the notebook
-3. Click `Run/Run All`
+2. Run each cell in "Set Up" section
+3. Choose `BYOD` in the drop down **benchmarks** widget
+4. Upload your user-defined schema file for each table to the **schemas** folder. Follow the example in **schemas/tpch**. Schema for each table should follow below pattern: 
+
+    ```json
+    {
+        "table_name": "customer",
+        "rows": 750000,
+        "fields": [
+            {
+                "colName": "c_custkey",
+                "colType": "bigint",
+                "uniqueValues": null,
+                "values": [],
+                "minValue": null,
+                "maxValue": null
+            },
+            {
+                "colName": "c_mktsegment",
+                "colType": "string",
+                "uniqueValues": 5,
+                "values": [
+                    "MACHINERY",
+                    "AUTOMOBILE",
+                    "BUILDING",
+                    "HOUSEHOLD",
+                    "FURNITURE"
+                ],
+                "minValue": null,
+                "maxValue": null
+            }
+        ]
+    }
+    ```
 
 ### Output
 
@@ -90,20 +118,42 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 ![workflow](./assets/workflow.png)
 
-In **generate_data** task, data are generated in Unity Catalog
+2. In **generate_data** task, data are generated in Unity Catalog
+![generate data](./assets/byod.png)
+
+3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
+
+![run byod benchmarking](./assets/byod_run_benchmarking.png)
+
+
+## Use Case 3: Generate TPC Data
+
+You want to test Databricks SQL Warehouses performance at different scale factors of TPC Industry benchmark Data.
+
+### Setup
+
+Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
+
+1. Open **advanced** notebook on Databricks workspace.
+2. Run each cell in "Set Up" section
+3. Choose `TPCH` or `TPCDS` in the drop down **benchmarks** widget and the **scale factors**
+
+### Output
+
+1. An automated Workflow job is created with 2 tasks: Generate_Data and Run_Benchmarking
+
+![workflow](./assets/workflow.png)
+
+2. In **generate_data** task, data are generated in Unity Catalog
 ![generate data](./assets/generate_data.png)
 
-In the **run_benchmarking task**, benchmark queries are executed on the generated data
+3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
 
 ![run benchmarking](./assets/run_benchmarking.png)
 
-2. If the TPC data already exists, an automated Workflow job is created with only the Run_Benchmarking task. The Generate_Data task is skipped in this case.
+4. If the TPC data already exists, an automated Workflow job is created with only the Run_Benchmarking task. The Generate_Data task is skipped in this case.
 
 ![workflow_1_task](./assets/workflow_1_task.png)
-
-## Use Case 3: Benchmark against 3rd-party enterprise data warehouses 
-
-[COMING SOON] 
 
 ## Use Case 4: Use Databricks Execute SQL API
 
