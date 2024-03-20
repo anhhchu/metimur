@@ -14,16 +14,16 @@ This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databri
 - [Requirements](#requirements)
 - [When to Use](#when-to-use)
     - [Use Case 1: Benchmark existing data](#use-case-1-benchmark-existing-data)
-        - [Setup](#setup)
+        - [Getting Started](#getting-started)
         - [Output](#output)
     - [Use Case 2: Generate Data from Schema](#use-case-2-generate-data)
-        - [Setup](#setup-1)
+        - [Getting Started](#getting-started-1)
         - [Output](#output-1)
     - [Use Case 3: Generate TPC Data](#use-case-3-generate-data)
-        - [Setup](#setup-2)
+        - [Getting Started](#getting-started-2)
         - [Output](#output-2)
     - [Use Case 3: Use Databricks Execute SQL API](#use-case-4-use-databricks-execute-sql-api)
-        - [Setup](#setup-3)
+        - [Getting Started](#getting-started-3)
         - [Output](#output-3)
 
 # Requirements
@@ -39,7 +39,7 @@ The **quickstart** notebook provides a convenient way to execute queries concurr
 
 >**Note**: You should have **existing data** available in the workspace to proceed. If you don't have available data, the default data used in the notebook is `tpch` data in `samples` catalog along with tpch sample queries in `queries` folder of this repo. If you want to use TPCH and TPCDS data with different scale factor, or generate your own data with defined schema, go to **Advanced** notebook.
 
-### Setup
+### Getting Started
 
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
@@ -72,7 +72,7 @@ With **multiple-warehouses-size** benchmark option, you can choose multiple ware
 
 You want to generate synthetic data based on table schemas, and benchmark the query duration at different concurrency levels on Databricks SQL Warehouses
 
-### Setup
+### Getting Started
 
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
@@ -112,13 +112,25 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
     }
     ```
 
+5. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget
+  * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
+
+    ```
+    --q1--
+    select * from table1;
+
+    --q2--
+    select * from table2;
+    ```
+
 ### Output
 
 1. An automated Workflow job is created with 2 tasks: Generate_Data and Run_Benchmarking
 
 ![workflow](./assets/workflow.png)
 
-2. In **generate_data** task, data are generated in Unity Catalog
+2. In **generate_data** task, data are generated in `serverless_benchmark` catalog
+
 ![generate data](./assets/byod.png)
 
 3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
@@ -130,28 +142,28 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 You want to test Databricks SQL Warehouses performance at different scale factors of TPC Industry benchmark Data.
 
-### Setup
+### Getting Started
 
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
 1. Open **advanced** notebook on Databricks workspace.
 2. Run each cell in "Set Up" section
-3. Choose `TPCH` or `TPCDS` in the drop down **benchmarks** widget and the **scale factors**
+3. Choose `TPCH` or `TPCDS` in the drop down **Benchmarks** widget and the **Scale Factors**
+4. Set the **Query Path** widget to `queries/tpch` or `queries/tpcds`
 
 ### Output
 
 1. An automated Workflow job is created with 2 tasks: Generate_Data and Run_Benchmarking
 
-![workflow](./assets/workflow.png)
+2. In **generate_data** task, TPC data are generated in `serverless_benchmark` catalog. 
 
-2. In **generate_data** task, data are generated in Unity Catalog
 ![generate data](./assets/generate_data.png)
 
 3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
 
 ![run benchmarking](./assets/run_benchmarking.png)
 
-4. If the TPC data already exists, an automated Workflow job is created with only the Run_Benchmarking task. The Generate_Data task is skipped in this case.
+**Note**: To avoid re-generate these industry benchmarks data, after data is generated, all users in the workspace will be able to query the tables and run benchmark queries on them. If the schemas and tables already exist, the Generate Data task will be skipped
 
 ![workflow_1_task](./assets/workflow_1_task.png)
 
@@ -168,7 +180,7 @@ You want to use Databricks warehouses from local machine or an application:
 * Access to Databricks workspace, and permission to create Personal Access Token
 * Access to an existing Databricks SQL Warehouse
 
-### Setup
+### Getting Started
 
 1. Clone this repo to your local machine, in your terminal 
 * Go to `cd metimur/extras/quickstarts_restapi_standalone`
