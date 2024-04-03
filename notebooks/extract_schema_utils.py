@@ -1,8 +1,7 @@
 # Databricks notebook source
 from pyspark.sql.functions import date_format
 
-def extract_table_schema(catalog_name, schema_name, table_name):
-  df = spark.table(f"{catalog_name}.{schema_name}.{table_name}")
+def _extract_df_schema(df, table_name):
   rows = df.count()
 
   fields = []
@@ -30,13 +29,18 @@ def extract_table_schema(catalog_name, schema_name, table_name):
   table_schema = {"table_name": table_name, "rows": rows, "fields": fields } 
   return table_schema
 
-table_schema = extract_table_schema("samples", "tpch", "orders")
+df = spark.table(f"samples.tpch.customer")
+table_schema = _extract_df_schema(df, "customer")
 
 table_schema
 
 # COMMAND ----------
 
-def extract_schemas(catalog_name, schema_name):
+df.summary().display()
+
+# COMMAND ----------
+
+def extract_table_schemas(catalog_name, schema_name):
   # Get the list of table names in the catalog.schema
   table_names = spark.catalog.listTables(f"{catalog_name}.{schema_name}")
   table_names = [table.name for table in table_names]
@@ -44,8 +48,8 @@ def extract_schemas(catalog_name, schema_name):
   # Extract schema and row count for each table
   table_schemas = []
   for table_name in table_names:
-    print(table_name)
-    table_schema = extract_table_schema(catalog_name, schema_name, table_name)
+    df = spark.table(f"{catalog_name}.{schema_name}.{table_name}")
+    table_schema = extract_df_schema(df)
     table_schemas.append(table_schema)
   return table_schemas
 

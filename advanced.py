@@ -8,7 +8,6 @@
 # MAGIC 2. Parameters Update: Update the parameters based on your requirements or keep the default values to observe the functionality.
 # MAGIC 3. Executing the Notebook: After making the necessary changes, you can click "Run" or "Run All" to execute the entire notebook with the updated parameters.
 # MAGIC 4. Workflow Job Creation: A workflow job will be created with two tasks: **data generation** and **benchmarking**. The URL of the workflow job can be found under the "Run Workflow" section.
-# MAGIC 5. Clean-Up: You will have the option to clean up generated Jobs and data under the "Clean Up" section. **Wait for Workflow Job to complete before Clean Up**
 # MAGIC
 # MAGIC ## Parameters
 # MAGIC 1. Benchmarks - TPCH, TPCDS, BYOD (bring your own data):
@@ -100,11 +99,6 @@ catalog_name = "serverless_benchmark"
 
 # DBTITLE 1,Import Constants
 from constants import *
-
-# COMMAND ----------
-
-# DBTITLE 1,Add Widgets to Notebook
-dbutils.widgets.removeAll()
 
 # COMMAND ----------
 
@@ -390,26 +384,3 @@ print(f"It will save data at {catalog_name}.{schema_name}")
 print(
     "The job may take several hours depending upon data size, so please check back when it's complete.\n"
 )
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Clean Up
-
-# COMMAND ----------
-
-# DBTITLE 1,Clean Up Jobs
-confirmation = input(f"Do you want to delete the generated job {job_id}: Yes, No:" )
-if confirmation == "Yes":
-  client.w.jobs.delete(job_id=job_id)
-
-# COMMAND ----------
-
-# DBTITLE 1,Clean Up Data
-def teardown(catalog_name, schema_name):
-  spark.sql(f"drop schema if exists {catalog_name}.{database_name} cascade")
-
-if constants.benchmarks == "BYOD":
-  confirmation = input("Do you want to delete your generated data: Yes, No:" )
-  if confirmation == 'Yes':
-    teardown(catalog_name, schema_name)

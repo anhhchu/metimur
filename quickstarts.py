@@ -104,7 +104,7 @@ dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", cho
 benchmark_choice = dbutils.widgets.get("benchmark_choice")
 
 warehouse_prefix = dbutils.widgets.get("warehouse_prefix")
-warehouse_size = dbutils.widgets.get("warehouse_size")
+warehouse_sizes_str = dbutils.widgets.get("warehouse_size")
 warehouse_type = dbutils.widgets.get("warehouse_type")
 
 catalog_name = dbutils.widgets.get("catalog_name")
@@ -119,27 +119,27 @@ results_cache_enabled = True if dbutils.widgets.get("results_cache_enabled") in 
 
 # COMMAND ----------
 
+warehouse_sizes = warehouse_sizes_str.split(",")
+warehouse_size = warehouse_sizes[0]
+if benchmark_choice == "multiple-warehouses-size":
+  print("Benchmark on multiple warehouse sizes:", warehouse_sizes)
+elif benchmark_choice == "multiple-warehouses":
+  print("Benchmark on multiple warehouse types PRO, CLASSIC, SERVERLESS of size:", warehouse_size)
+elif benchmark_choice == "one-warehouse":
+  # Take only the first warehouse option if multiple-warehouses-size is not selected
+  print("Benchmark on One warehouse of size:", warehouse_size)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # Benchmark
 
 # COMMAND ----------
 
-if benchmark_choice == "multiple-warehouses-choice":
-  warehouse_sizes = warehouse_size.split(",")
-else:
-  # Take only the first warehouse option if multiple-warehouses-choice is not selected
-  warehouse_sizes = warehouse_size.split(",")
-  warehouse_size = warehouse_sizes[0]
-
-print("One warehouse size: ", warehouse_size)
-print("Multiple warehouse sizes: ", warehouse_sizes)
-
-# COMMAND ----------
-
 logger.setLevel(logging.WARNING)
 
-tables = spark.catalog.listTables(f"{catalog_name}.{schema_name}")
-tables = [table.name for table in tables]
+tables = spark.sql(f"show tables in {catalog_name}.{schema_name}").select("tableName").collect()
+tables = [row["tableName"] for row in tables]
 tables
 
 # COMMAND ----------
@@ -204,7 +204,7 @@ def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
     bm.setCatalog(catalog_name)
     bm.setSchema(schema_name)
 
-    # bm.preWarmTables(tables)
+    bm.preWarmTables(tables)
     
     bm.query_file_format = "semicolon-delimited"
     bm.setConcurrency(concurrency)
