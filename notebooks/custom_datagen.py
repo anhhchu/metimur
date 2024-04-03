@@ -4,24 +4,17 @@
 
 # COMMAND ----------
 
-import sys
-import os
-
-sys.path.append(os.path.abspath(".."))
-_cwd = os.getcwd()
-_pwd = os.path.dirname(_cwd)
-sys.path.append(_pwd)
-
-# COMMAND ----------
-
 # MAGIC %pip install -r requirements.txt -q
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
-# Import utils functions
-from utils.func import *
-# from constants import *
+import sys
+import os
+# sys.path.append(os.path.abspath(".."))
+# _cwd = os.getcwd()
+# _pwd = os.path.dirname(_cwd)
+# sys.path.append(_pwd)
 
 # COMMAND ----------
 
@@ -33,8 +26,8 @@ token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiTok
 dbutils.widgets.removeAll()
 
 dbutils.widgets.text(name="catalog_name", defaultValue="serverless_benchmark")
-dbutils.widgets.text(name="schema_name", defaultValue="demos")
-dbutils.widgets.text(name="schema_path", defaultValue="../schemas/demos")
+dbutils.widgets.text(name="schema_name", defaultValue="tpch_datagen")
+dbutils.widgets.text(name="schema_path", defaultValue="../schemas/tpch")
   
 catalog_name = dbutils.widgets.get("catalog_name")
 schema_name = dbutils.widgets.get("schema_name")
@@ -48,6 +41,9 @@ schema_path = dbutils.widgets.get("schema_path")
 # MAGIC Generate data for bring your own data (BYOD)
 
 # COMMAND ----------
+
+import dbldatagen as dg
+import time
 
 def generate_dataframe(rows, table, table_schema):
 
@@ -100,8 +96,9 @@ files
 # COMMAND ----------
 
 import json
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
-for file_name in files:
+def process_file(file_name):
   with open(os.path.join(schema_path, file_name), "r") as file:
     json_data = json.load(file)
 
@@ -115,3 +112,9 @@ for file_name in files:
   # Call the generate_delta_table function
   df = generate_dataframe(rows, table_name, fields)
   generate_delta_table(df, table_name)
+
+
+with ThreadPoolExecutor(max_workers=len(files)) as executor:
+  futures = [executor.submit(process_file, file_name) for file_name in files]
+  wait(futures, return_when=ALL_COMPLETED)
+
