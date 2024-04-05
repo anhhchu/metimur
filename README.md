@@ -16,15 +16,16 @@ This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databri
     - [Use Case 1: Benchmark existing data](#use-case-1-benchmark-existing-data)
         - [Getting Started](#getting-started)
         - [Output](#output)
-    - [Use Case 2: Generate Data from Schema](#use-case-2-generate-data)
+    - [Use Case 2: Generate Synthetic Data based on table schemas](#use-case-2-generate-synthetic-data-based-on-table-schemas)
         - [Getting Started](#getting-started-1)
         - [Output](#output-1)
-    - [Use Case 3: Generate TPC Data](#use-case-3-generate-data)
+    - [Use Case 3: Generate TPC Data](#use-case-3-generate-tpc-data)
         - [Getting Started](#getting-started-2)
         - [Output](#output-2)
-    - [Use Case 3: Use Databricks Execute SQL API](#use-case-4-use-databricks-execute-sql-api)
+    - [Extras: Use Databricks Execute SQL API](#extras-use-databricks-execute-sql-api)
         - [Getting Started](#getting-started-3)
         - [Output](#output-3)
+- [Limitations](#limitations)
 
 # Requirements
 * Databricks workspace with Serverless and Unity Catalog enabled
@@ -49,26 +50,24 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 ### Output
 
-With **one-warehouse** benchmark option, you can view the average duration of each query
+1. With **one-warehouse** benchmark option, you can view the average duration of each query
 
 ![quickstarts one warehouse](./assets/quickstarts_onewh.png)
 
-With **multiple-warehouses** benchmark option, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_prefix widget.
+2. With **multiple-warehouses** benchmark option, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_prefix widget.
 
 ![warehouse startup time](./assets/warehouses_startup.png)
 
 ![warehouse metrics](./assets/warehouses_metrics.png)
 
-With **multiple-warehouses-size** benchmark option, you can choose multiple warehouse sizes from the drop down **warehouse_size** widget. These warehouse will be created with have the same type based on **warehouse_type** widget and their names will be prefixed with the **warehouse_prefix** widget.
-
-![warehouse size choice](./assets/warehouse_size_choices.png)
+3. With **multiple-warehouses-size** benchmark option, you can choose multiple warehouse sizes from the drop down **warehouse_size** widget. These warehouse will be created with have the same type based on **warehouse_type** widget and their names will be prefixed with the **warehouse_prefix** widget.
 
 ![warehouse size](./assets/warehouses_size.png)
 
 **Note: The query duration is fetched from Query History API and should be consistent with query duration on Databricks monitoring UI**
 
 
-## Use Case 2: Generate Synthectic Data based on table schemas
+## Use Case 2: Generate Synthetic Data based on table schemas
 
 You want to generate synthetic data based on table schemas, and benchmark the query duration at different concurrency levels on Databricks SQL Warehouses
 
@@ -79,8 +78,11 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 1. Open **advanced** notebook on Databricks workspace.
 2. Run each cell in "Set Up" section
 3. Choose `BYOD` in the drop down **benchmarks** widget
-4. Upload your user-defined schema file for each table to the **schemas** folder. Follow the example in **schemas/tpch**. Schema for each table should follow below pattern: 
+4. Upload your user-defined schema file for each table to the **schemas** folder. Follow the example in **schemas/tpch**. 
 
+    <details>
+    <summary>Table Schema Example</summary>
+    
     ```json
     {
         "table_name": "customer",
@@ -111,6 +113,7 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
         ]
     }
     ```
+    </detail>
 
 5. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget
   * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
@@ -161,13 +164,13 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
 
-![run benchmarking](./assets/run_benchmarking.png)
+![run tpc benchmarking](./assets/run_benchmarking.png)
 
 **Note**: To avoid re-generate these industry benchmarks data, after data is generated, all users in the workspace will be able to query the tables and run benchmark queries on them. If the schemas and tables already exist, the Generate Data task will be skipped
 
 ![workflow_1_task](./assets/workflow_1_task.png)
 
-## Use Case 4: Use Databricks Execute SQL API
+## Extras: Use Databricks Execute SQL API
 
 You want to use Databricks warehouses from local machine or an application:
 * execute queries with parameters on Databricks SQL warehouse from your local machine using [Databricks Execute SQL API](https://docs.databricks.com/api/workspace/statementexecution/executestatement). 
@@ -198,7 +201,7 @@ USER_NAME = ""
 ```
 
 <details>
-<summary>Instructions to obtain the above values</summary>
+<summary>Instructions to obtain above parameters</summary>
 
 * HOST: aka [Workspace Instance Name](https://docs.databricks.com/en/workspace/workspace-details.html) can be located on the browser when you login to Databricks workspace
 
@@ -243,3 +246,11 @@ Q2     657.579487
 Q3     420.361538
 ...
 ```
+
+# Limitations
+
+- This tool is designed to support only Unity Catalog managed tables. For ease of use, a default Unity Catalog named `serverless_benchmark` is automatically created to store all TPC and user-generated synthetic data.
+- All workspace users are granted `USE CATALOG`, `CREATE SCHEMA`, `USE SCHEMA`, `CREATE TABLE` permissions on the catalog, as well as `SELECT` permission to query TPC Data tables. Refer [Unity Catalog Privileges and securable objects](https://docs.databricks.com/en/data-governance/unity-catalog/manage-privileges/privileges.html#unity-catalog-privileges-and-securable-objects)
+- If TPC data already exist, they won't be regenerated.
+- In the Synthetic data generation mode, query permissions are exclusively granted to the user who creates the user-defined schemas and tables.
+- It is recommended to test queries on Databricks before executing them for benchmarking. Currently, there is no automatic conversion of queries from other EDW systems to Databricks query syntax. Therefore, ensure that the queries for benchmarking are compatible with Databricks. 
