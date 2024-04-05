@@ -169,7 +169,10 @@ tables_already_exist = False
 if constants.benchmarks != "BYOD":
   tables_already_exist = check_tables_already_exist(spark, constants.benchmarks, catalog_name, schema_name)
 
-print(tables_already_exist)
+if tables_already_exist:
+  print("Tables already exist, skipping data generation")
+else:
+  print("Tables do not exist, generating data")
 
 # COMMAND ----------
 
@@ -384,3 +387,7 @@ print(f"It will save data at {catalog_name}.{schema_name}")
 print(
     "The job may take several hours depending upon data size, so please check back when it's complete.\n"
 )
+
+# COMMAND ----------
+
+
