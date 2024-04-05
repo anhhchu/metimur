@@ -85,30 +85,39 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
     
     ```json
     {
-        "table_name": "customer",
-        "rows": 750000,
-        "fields": [
-            {
-                "colName": "c_custkey",
-                "colType": "bigint",
-                "uniqueValues": null,
-                "values": [],
-                "minValue": null,
-                "maxValue": null
-            },
-            {
-                "colName": "c_mktsegment",
-                "colType": "string",
-                "uniqueValues": 5,
-                "values": [
-                    "MACHINERY",
-                    "AUTOMOBILE",
-                    "BUILDING",
-                    "HOUSEHOLD",
-                    "FURNITURE"
-                ],
-                "minValue": null,
-                "maxValue": null
+      "table_name": "customer",
+      "rows": 750000,
+      "fields": [
+        {
+          "colName": "c_custkey",
+          "colType": "bigint",
+          "uniqueValues": 750000,
+          "minValue": 1,
+          "maxValue": 750000
+        },{
+          "colName": "c_acctbal",
+          "colType": "decimal(18,2)",
+          "uniqueValues": 543490,
+          "minValue": -999.99,
+          "maxValue": 9999.99
+        },{
+          "colName": "c_mktsegment",
+          "colType": "string",
+          "uniqueValues": 5,
+          "values": [
+            "MACHINERY",
+            "AUTOMOBILE",
+            "BUILDING",
+            "HOUSEHOLD",
+            "FURNITURE"
+          ],
+          "weights": [
+            20.0,
+            20.0,
+            20.0,
+            20.0,
+            20.0
+              ]
             }
         ]
     }
