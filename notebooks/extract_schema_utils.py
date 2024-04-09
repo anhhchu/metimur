@@ -1,7 +1,7 @@
 # Databricks notebook source
 from pyspark.sql.functions import date_format, collect_set, count_distinct, min, max, col, count, round
 
-def _extract_df_schema(df, table_name):
+def extract_df_schema(df, table_name):
   print(f"-- Extract schema for table {table_name}")
   rows = df.count()
   # summary = df.summary()
@@ -43,9 +43,9 @@ def _extract_df_schema(df, table_name):
   return table_schema
 
 ### TEST THE FUNCTION
-# df = spark.table(f"samples.tpch.orders")
-# table_schema = _extract_df_schema(df, "orders")
-# table_schema
+df = spark.table(f"samples.tpch.orders")
+table_schema = extract_df_schema(df, "orders")
+table_schema
 
 # COMMAND ----------
 
@@ -58,7 +58,7 @@ def extract_table_schemas(catalog_name, schema_name):
   table_schemas = []
   for table_name in table_names:
     df = spark.table(f"{catalog_name}.{schema_name}.{table_name}")
-    table_schema = _extract_df_schema(df, table_name)
+    table_schema = extract_df_schema(df, table_name)
     table_schemas.append(table_schema)
   return table_schemas
 

@@ -116,6 +116,10 @@ concurrency = int(dbutils.widgets.get("concurrency"))
 max_clusters = int(dbutils.widgets.get("max_clusters"))
 results_cache_enabled = True if dbutils.widgets.get("results_cache_enabled") in ("True", "true") else False
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Benchmark
 
 # COMMAND ----------
 
@@ -131,11 +135,6 @@ elif benchmark_choice == "one-warehouse":
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC # Benchmark
-
-# COMMAND ----------
-
 logger.setLevel(logging.WARNING)
 
 tables = spark.sql(f"show tables in {catalog_name}.{schema_name}").select("tableName").collect()
@@ -143,10 +142,6 @@ tables = [row["tableName"] for row in tables]
 tables
 
 # COMMAND ----------
-
-# reload for changes in benchmark
-import importlib
-importlib.reload(benchmark)
 
 from beaker import spark_fixture, sqlwarehouseutils
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
@@ -269,6 +264,10 @@ def run_multiple_benchmarks_size(warehouse_sizes):
     return combined_metrics_pdf
 
 # COMMAND ----------
+
+# reload for changes in benchmark
+import importlib
+importlib.reload(benchmark)
 
 if benchmark_choice == "one-warehouse":
   metrics_pdf = run_benchmark(warehouse_type)
