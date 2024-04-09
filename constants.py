@@ -335,5 +335,8 @@ class Constants:
         # Mapping of number of workers to scale factor, format {scale_factors: workers}
         self.workers_scale_factor_map = WORKERS_SCALE_FACTOR_MAP[self.scale_factors]
 
+        # Create unique name for job
+        self.job_name = f"{self.job_name} {self.benchmarks} {self.benchmark_choice}"
+
 
 

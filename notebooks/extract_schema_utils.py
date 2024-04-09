@@ -1,42 +1,51 @@
 # Databricks notebook source
-from pyspark.sql.functions import date_format
+from pyspark.sql.functions import date_format, collect_set, count_distinct, min, max, col, count, round
 
-def _extract_df_schema(df, table_name):
+def extract_df_schema(df, table_name):
+  print(f"-- Extract schema for table {table_name}")
   rows = df.count()
+  # summary = df.summary()
 
   fields = []
   for column, data_type in df.dtypes:
-    distinct_count = None
-    values = []
-    min_value = None
-    max_value = None
+    distinct_count = df.select(count_distinct(column)).first()[0]
+    field = {"colName": column, "colType": data_type, "uniqueValues": distinct_count }
+
     if data_type in ("string", "bool"):
-      distinct_values = df.select(column).distinct()
-      distinct_count = distinct_values.count()
-      if distinct_count < 1000:
-        values = [row[column] for row in distinct_values.collect() if row[column] is not None]
-    elif data_type in ("timestamp", "date"):
-      # Get the minimum value of the column
-      min_value = df.agg({column: "min"}).collect()[0][0]
-      min_value = min_value.strftime("%Y-%m-%d %H:%M:%S")  # Convert to string format
+      if distinct_count > 2000:
+        field["template"] = "\w"
+      else:
+        values_dict = df.groupBy(column).agg(round(count("*")*100 / df.count()).alias("weights")).toPandas().to_dict()
+        field["values"] = list(values_dict[column].values())
+        field["weights"] = list(values_dict["weights"].values())
 
-      # Get the maximum value of the column
-      max_value = df.agg({column: "max"}).collect()[0][0]
-      max_value = max_value.strftime("%Y-%m-%d %H:%M:%S")  # Convert to string format
+    elif data_type in ("timestamp"):
+      field["begin"] = df.select(min(column)).first()[0].strftime("%Y-%m-%d %H:%M:%S")
+      field["end"] = df.select(max(column)).first()[0].strftime("%Y-%m-%d %H:%M:%S")
+    
+    elif data_type in ("date"):
+      field["begin"] = df.select(min(column)).first()[0].strftime("%Y-%m-%d")
+      field["end"] = df.select(max(column)).first()[0].strftime("%Y-%m-%d")
 
-    fields.append({"colName": column, "colType": data_type, "uniqueValues": distinct_count, "values": values, "minValue": min_value, "maxValue": max_value })
+    else:
+      min_value = df.agg(min(column)).first()[0]
+      max_value = df.agg(max(column)).first()[0]
+      if data_type.startswith("decimal"):
+        min_value = float(min_value)
+        max_value = float(max_value)
+        
+      field["minValue"] = min_value
+      field["maxValue"] = max_value
+
+    fields.append(field)
 
   table_schema = {"table_name": table_name, "rows": rows, "fields": fields } 
   return table_schema
 
-df = spark.table(f"samples.tpch.customer")
-table_schema = _extract_df_schema(df, "customer")
-
+### TEST THE FUNCTION
+df = spark.table(f"samples.tpch.orders")
+table_schema = extract_df_schema(df, "orders")
 table_schema
-
-# COMMAND ----------
-
-df.summary().display()
 
 # COMMAND ----------
 
@@ -49,11 +58,13 @@ def extract_table_schemas(catalog_name, schema_name):
   table_schemas = []
   for table_name in table_names:
     df = spark.table(f"{catalog_name}.{schema_name}.{table_name}")
-    table_schema = extract_df_schema(df)
+    table_schema = extract_df_schema(df, table_name)
     table_schemas.append(table_schema)
   return table_schemas
 
-table_schemas = extract_schemas("samples", "tpch")
+### TEST THE FUNCTION
+# table_schemas = extract_table_schemas("samples", "nyctaxi")
+# table_schemas
 
 # COMMAND ----------
 
@@ -61,7 +72,8 @@ import os
 import shutil
 import json
 
-def write_json_schemas(output_folder):
+def write_json_schemas(table_schemas, output_folder):
+  
   if os.path.exists(output_folder):
     shutil.rmtree(output_folder)
 
@@ -73,7 +85,12 @@ def write_json_schemas(output_folder):
     with open(file_path, "w") as file:
         json.dump(schema_json, file)
 
-write_json_schemas("../schemas/tpch")
+
+# COMMAND ----------
+
+### MAIN
+table_schemas = extract_table_schemas("samples", "tpch")
+write_json_schemas(table_schemas, "../schemas/tpch")
 
 # COMMAND ----------
 

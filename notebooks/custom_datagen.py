@@ -11,10 +11,6 @@
 
 import sys
 import os
-# sys.path.append(os.path.abspath(".."))
-# _cwd = os.getcwd()
-# _pwd = os.path.dirname(_cwd)
-# sys.path.append(_pwd)
 
 # COMMAND ----------
 
@@ -90,15 +86,13 @@ def get_files_from_dir(schema_path, type="json"):
   files = [file for file in file_list if file.endswith(type)]
   return files
 
-files = get_files_from_dir(schema_path)
-files
-
 # COMMAND ----------
 
 import json
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 def process_file(file_name):
+  print("fileName: ", file_name)
   with open(os.path.join(schema_path, file_name), "r") as file:
     json_data = json.load(file)
 
@@ -113,8 +107,9 @@ def process_file(file_name):
   df = generate_dataframe(rows, table_name, fields)
   generate_delta_table(df, table_name)
 
+# COMMAND ----------
 
+files = get_files_from_dir(schema_path)
 with ThreadPoolExecutor(max_workers=len(files)) as executor:
   futures = [executor.submit(process_file, file_name) for file_name in files]
   wait(futures, return_when=ALL_COMPLETED)
-
