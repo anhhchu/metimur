@@ -8,7 +8,7 @@
 
 This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking 
 
-![lemur](./assets/lemur_lab.png)
+![lemur](./assets/lemur_torch.jpeg)
 
 # Table of Contents
 - [Requirements](#requirements)
@@ -254,3 +254,4 @@ Q3     420.361538
 - If TPC data already exist, they won't be regenerated.
 - In the Synthetic data generation mode, query permissions are exclusively granted to the user who creates the user-defined schemas and tables.
 - It is recommended to test queries on Databricks before executing them for benchmarking. Currently, there is no automatic conversion of queries from other EDW systems to Databricks query syntax. Therefore, ensure that the queries for benchmarking are compatible with Databricks. 
+- It is highly recommended to optimize generated Delta Tables using optimization techniques such as [Liquid Clustering](https://docs.databricks.com/en/delta/clustering.html) or [partitioning + Zordering](https://docs.databricks.com/en/delta/data-skipping.html#what-is-z-ordering) on Databricks before executing them for benchmarking. Currently, there is no automatic conversion of queries from other EDW systems to Databricks query syntax. Therefore, ensure that the queries for benchmarking are compatible with Databricks.
