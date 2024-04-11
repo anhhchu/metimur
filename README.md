@@ -6,7 +6,7 @@
 - Evaluating query performance in Databricks SQL warehouses
 - Eliminating reliance on sensitive data by creating synthetic data based on table schemas
 
-This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, and [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking 
+This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking, and [TPC-DS Runner](https://github.com/AbePabbathi/lakehouse-tacklebox/tree/main/30-performance/TPC-DS%20Runner) created by mberk06
 
 ![lemur](./assets/lemur_torch.jpeg)
 
