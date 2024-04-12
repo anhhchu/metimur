@@ -59,6 +59,7 @@
 # COMMAND ----------
 
 # MAGIC %pip install -r requirements.txt -q
+# MAGIC %pip install --upgrade databricks-sdk
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -70,6 +71,37 @@ from databricks.sdk import WorkspaceClient
 import os
 import requests
 import re
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC ## Recommend to use alternative Approach to authentication due to [this depreciation](https://databricks.atlassian.net/wiki/spaces/KB/pages/571998630/Accessing+the+Databricks+REST+API+from+notebooks+using+internal+tokens)
+# MAGIC
+# MAGIC 1. Use SDK, the newer version SDK allow [default authentication](https://databricks-sdk-py.readthedocs.io/en/latest/authentication.html) if we do not provide any argument to `WorkspaceClient()`
+# MAGIC
+# MAGIC   ```python
+# MAGIC   from databricks.sdk import WorkspaceClient
+# MAGIC   w = WorkspaceClient()
+# MAGIC   ```
+# MAGIC
+# MAGIC 2. Use databricks secret scope
+# MAGIC
+# MAGIC ```python
+# MAGIC scope_name = '<my_scope>'
+# MAGIC key_name = '<my_token>'
+# MAGIC databricks_token = '<databricks_token>'
+# MAGIC
+# MAGIC # create scope and token
+# MAGIC from databricks.sdk import WorkspaceClient
+# MAGIC
+# MAGIC w = WorkspaceClient()
+# MAGIC w.secrets.create_scope(scope=scope_name)
+# MAGIC w.secrets.put_secret(scope=scope_name, key=key_name, string_value=databricks_token)
+# MAGIC
+# MAGIC dbutils.secrets.list(scope='<my_scope>')
+# MAGIC TOKEN = dbutils.secret.get(scope='<my_scope>', key='<my_token>')
+# MAGIC ```
 
 # COMMAND ----------
 
