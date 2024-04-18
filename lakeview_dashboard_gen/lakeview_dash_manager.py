@@ -17,7 +17,7 @@ class lakeview_dash_manager:
         self.lakeview_json = None
 
     def list_content(self, path):
-        """_summary_
+        """List out the content from the path of a workspace
 
         Args:
             path: workspace path to list content from
@@ -31,7 +31,7 @@ class lakeview_dash_manager:
         return response.json()
 
     def export_dash(self, path, dashboard_name):
-        """_summary_
+        """export dashboard with given workspace path and dashboard name
 
         Args:
             path): workspace path to export lakeview dashboard from
