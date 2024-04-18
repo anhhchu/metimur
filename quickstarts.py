@@ -73,8 +73,6 @@ import re
 
 # COMMAND ----------
 
-logger = logging.getLogger()
-
 HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
 TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 VALID_WAREHOUSES = ["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"]
@@ -135,8 +133,6 @@ elif benchmark_choice == "one-warehouse":
 
 # COMMAND ----------
 
-logger.setLevel(logging.WARNING)
-
 tables = spark.sql(f"show tables in {catalog_name}.{schema_name}").select("tableName").collect()
 tables = [row["tableName"] for row in tables]
 tables
@@ -145,8 +141,6 @@ tables
 
 from beaker import spark_fixture, sqlwarehouseutils
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
-
-logger.setLevel(logging.INFO)
 
 def get_warehouse(hostname, token, warehouse_name):
   sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses"
@@ -212,7 +206,7 @@ def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
         bm.setQueryFile(query_path)
     
     metrics_pdf = bm.execute()
-    bm.sql_warehouse.close_connection()
+    # bm.sql_warehouse.close_connection()
     bm.stop_warehouse(bm.warehouse_id)
     return  metrics_pdf
 
@@ -268,6 +262,9 @@ def run_multiple_benchmarks_size(warehouse_sizes):
 # reload for changes in benchmark
 import importlib
 importlib.reload(benchmark)
+
+# logger = logging.getLogger()
+# logger.setLevel(logging.INFO)
 
 if benchmark_choice == "one-warehouse":
   metrics_pdf = run_benchmark(warehouse_type)
