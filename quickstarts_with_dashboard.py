@@ -76,8 +76,32 @@ import re
 
 # MAGIC %md
 # MAGIC
-# MAGIC ## We may have to use alternative Approach to authentication due to [this depreciation](https://databricks.atlassian.net/wiki/spaces/KB/pages/571998630/Accessing+the+Databricks+REST+API+from+notebooks+using+internal+tokens)
+# MAGIC ## Recommend to use alternative Approach to authentication due to [this depreciation](https://databricks.atlassian.net/wiki/spaces/KB/pages/571998630/Accessing+the+Databricks+REST+API+from+notebooks+using+internal+tokens)
 # MAGIC
+# MAGIC 1. Use SDK, the newer version SDK allow [default authentication](https://databricks-sdk-py.readthedocs.io/en/latest/authentication.html) if we do not provide any argument to `WorkspaceClient()`
+# MAGIC
+# MAGIC   ```python
+# MAGIC   from databricks.sdk import WorkspaceClient
+# MAGIC   w = WorkspaceClient()
+# MAGIC   ```
+# MAGIC
+# MAGIC 2. Use databricks secret scope
+# MAGIC
+# MAGIC ```python
+# MAGIC scope_name = '<my_scope>'
+# MAGIC key_name = '<my_token>'
+# MAGIC databricks_token = '<databricks_token>'
+# MAGIC
+# MAGIC # create scope and token
+# MAGIC from databricks.sdk import WorkspaceClient
+# MAGIC
+# MAGIC w = WorkspaceClient()
+# MAGIC w.secrets.create_scope(scope=scope_name)
+# MAGIC w.secrets.put_secret(scope=scope_name, key=key_name, string_value=databricks_token)
+# MAGIC
+# MAGIC dbutils.secrets.list(scope='<my_scope>')
+# MAGIC TOKEN = dbutils.secret.get(scope='<my_scope>', key='<my_token>')
+# MAGIC ```
 
 # COMMAND ----------
 
@@ -293,41 +317,60 @@ elif benchmark_choice == "multiple-warehouses-size":
 
 # COMMAND ----------
 
-display(metrics_pdf)
-
-# COMMAND ----------
-
 metrics_sdf = spark.createDataFrame(metrics_pdf)
 display(metrics_sdf)
 
 # COMMAND ----------
 
-import plotly.graph_objects as go
+# MAGIC %md
+# MAGIC # Create Dashboard
 
-# Group the metrics by 'id' and 'warehouse_name' and calculate the average duration
-grouped_metrics = metrics_pdf.groupby(['id', 'warehouse_name']).mean(numeric_only=True)['duration'].reset_index()
+# COMMAND ----------
 
-# Create a stacked bar chart using Plotly
-fig = go.Figure()
+# MAGIC %md
+# MAGIC
+# MAGIC ## Load Modules
 
-# Iterate over each unique warehouse_name and add a bar for each warehouse
-for warehouse_name in grouped_metrics['warehouse_name'].unique():
-    warehouse_data = grouped_metrics[grouped_metrics['warehouse_name'] == warehouse_name]
-    fig.add_trace(go.Bar(
-        x=warehouse_data['id'],
-        y=warehouse_data['duration'],
-        name=warehouse_name
-    ))
+# COMMAND ----------
 
-# Set the layout of the chart
-fig.update_layout(
-    xaxis_title='ID',
-    yaxis_title='Duration (ms)',
-    title='Query Duration by Warehouse'
-)
+# MAGIC %run ./lakeview_dashboard_gen/benchmark_dash_utils
 
-# Display the chart
-fig.show()
+# COMMAND ----------
+
+# MAGIC %run ./lakeview_dashboard_gen/lakeview_dash_manager
+
+# COMMAND ----------
+
+lv_catalog_name = "qyu"
+lv_schema_name = "test"
+user_name = "q.yu@databricks.com"
+lv_workspace_path = f"/Users/{user_name}"
+lv_dashboard_name = "benchmark_metrics_lv"
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Create a view for Lakeview Dashboard
+# MAGIC
+# MAGIC * Name of view is fixed as `metimur_metrics`
+
+# COMMAND ----------
+
+create_view_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_name=lv_schema_name)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC ## Create a Lakeview dashboard from the template 
+# MAGIC * `./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json`
+
+# COMMAND ----------
+
+lv_api = lakeview_dash_manager(host=HOSTNAME, token=TOKEN)
+lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json")
+lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name)
+lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
 
 # COMMAND ----------
 

@@ -1,9 +1,7 @@
+# Databricks notebook source
 from pyspark.sql.functions import col, map_keys
 from pyspark.sql.types import IntegerType, MapType, StructType
 import json
-
-
-column_comments_path = "./column_comments.json"
 
 
 def flatten_map(df, fields):
@@ -62,14 +60,17 @@ def get_comments_from_json(file_path):
     return comments
 
 
-def create_view_from_df(df, spark, view_name, catalog_name, schema_name, select_cols=None):
+def create_view_from_df(df, 
+                        spark, 
+                        catalog_name,
+                        schema_name,
+                        comments_file_path='./lakeview_dashboard_gen/column_comments.json', 
+                        select_cols=None):
     """Create a temporary view from a spark dataframe
 
     Args:
         df: spark dataframe
         view_name: name of the view
-        catalog_name: name of the catalog
-        schema_name: name of the schema
         select_cols: columns to select, if None, select all columns
 
     Returns:
@@ -80,20 +81,23 @@ def create_view_from_df(df, spark, view_name, catalog_name, schema_name, select_
     if select_cols:
         df = df.select(select_cols)
     
-    # save the dataframe as a temporary table
-    spark.sql(f"USE CATALOG {catalog_name};")
-    spark.sql(f"USE SCHEMA {schema_name};")
-    df.createOrReplaceTable("query_results_temp")
+    # save the dataframe as a table
+    print(f"Write the dataframe into {catalog_name}.{schema_name}.metrics_processed")
+    spark.sql(f"USE catalog {catalog_name};")
+    spark.sql(f"USE schema {schema_name};")
+    (df.write
+       .mode("overwrite")
+       .saveAsTable("metrics_processed"))
     
     # create view sql script with comments
-    comments = get_comments_from_json(column_comments_path)
-    view_sql = f"CREATE OR REPLACE VIEW {view_name} AS (\n"
+    comments = get_comments_from_json(comments_file_path)
+    view_sql = f"CREATE OR REPLACE VIEW metimur_metrics (\n"
     for col in df.columns:
         if col in comments:
             view_sql += f"  {col} COMMENT '{comments[col]}',\n"
         else:
             view_sql += f"  {col},\n"
-    view_sql = view_sql[:-2] + "\n) AS SELECT * FROM query_results_temp;"
-    print(view_sql)
+    view_sql = view_sql[:-2] + "\n) AS SELECT * FROM metrics_processed;"
 
-
+    print(f"Creating a view named metimur_metric from the metrics and selected columns ...")
+    spark.sql(view_sql)
