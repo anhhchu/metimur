@@ -3,12 +3,12 @@
         {
             "name": "b8dc8e8d",
             "displayName": "metimur_metrics",
-            "query": "SELECT \n    *\nFROM CATALOG_NAME.SCHEMA_NAME.metimur_metrics"
+            "query": "SELECT \n    *\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME WHERE run_timestamp = (select max(run_timestamp) from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME)"
         },
         {
             "name": "b9badbed",
             "displayName": "last_run_timestamp",
-            "query": "SELECT \n    max(to_timestamp(from_unixtime(query_end_time_ms/1000))) as last_run_ended_timestamp\nFROM CATALOG_NAME.SCHEMA_NAME.metimur_metrics"
+            "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
         }
     ],
     "pages": [
@@ -798,8 +798,8 @@
                                     "datasetName": "b9badbed",
                                     "fields": [
                                         {
-                                            "name": "last_run_ended_timestamp",
-                                            "expression": "`last_run_ended_timestamp`"
+                                            "name": "last_run_timestamp",
+                                            "expression": "`last_run_timestamp`"
                                         }
                                     ],
                                     "disaggregated": true
@@ -811,8 +811,8 @@
                             "widgetType": "counter",
                             "encodings": {
                                 "value": {
-                                    "fieldName": "last_run_ended_timestamp",
-                                    "displayName": "last_run_ended_timestamp"
+                                    "fieldName": "last_run_timestamp",
+                                    "displayName": "last_run_timestamp"
                                 }
                             },
                             "frame": {

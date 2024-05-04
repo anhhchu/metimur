@@ -60,21 +60,15 @@ def get_comments_from_json(file_path):
     return comments
 
 
-def create_view_from_df(df, 
+def create_table_from_df(df, 
                         spark, 
                         catalog_name,
                         schema_name,
+                        table_name,
                         comments_file_path='./lakeview_dashboard_gen/column_comments.json', 
-                        select_cols=None):
-    """Create a temporary view from a spark dataframe
-
-    Args:
-        df: spark dataframe
-        view_name: name of the view
-        select_cols: columns to select, if None, select all columns
-
-    Returns:
-        None
+                        select_cols=None,
+                        overwrite=False):
+    """Create a delta table from a spark dataframe and add comments to delta table
     """
 
     # select columns if specified
@@ -82,22 +76,25 @@ def create_view_from_df(df,
         df = df.select(select_cols)
     
     # save the dataframe as a table
-    print(f"Write the dataframe into {catalog_name}.{schema_name}.metrics_processed")
+    print(f"Write the dataframe into {catalog_name}.{schema_name}.{table_name}")
     spark.sql(f"USE catalog {catalog_name};")
     spark.sql(f"USE schema {schema_name};")
-    (df.write
-       .mode("overwrite")
-       .saveAsTable("metrics_processed"))
-    
-    # create view sql script with comments
-    comments = get_comments_from_json(comments_file_path)
-    view_sql = f"CREATE OR REPLACE VIEW metimur_metrics (\n"
-    for col in df.columns:
-        if col in comments:
-            view_sql += f"  {col} COMMENT '{comments[col]}',\n"
-        else:
-            view_sql += f"  {col},\n"
-    view_sql = view_sql[:-2] + "\n) AS SELECT * FROM metrics_processed;"
+    if overwrite:
+        (
+        df.write
+            .format("delta")
+            .mode("overwrite")
+            .saveAsTable(table_name)
+        )
+    else:
+        (df.write
+        .mode("append")
+        .saveAsTable(table_name))
 
-    print(f"Creating a view named metimur_metric from the metrics and selected columns ...")
-    spark.sql(view_sql)
+    # create sql script with comments
+    print("Add comments to table columns")
+    comments = get_comments_from_json(comments_file_path)
+    for col in df.columns:
+        alter_sql = f"ALTER TABLE {catalog_name}.{schema_name}.{table_name} ALTER COLUMN {col} COMMENT '{comments.get(col)}';"
+        spark.sql(alter_sql)
+    

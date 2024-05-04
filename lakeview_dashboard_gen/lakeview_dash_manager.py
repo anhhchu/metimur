@@ -84,16 +84,18 @@ class lakeview_dash_manager:
         with open(path, "r") as f:
             self.lakeview_json = json.load(f)
 
-    def set_query_uc(self, catalog_name, schema_name):
-        """update the catalog_name and schema_name in the lakeview dashboard json obj
+    def set_query_uc(self, catalog_name, schema_name, table_name):
+        """update the catalog_name, schema_name, table_name in the lakeview dashboard json obj
 
         Args:
             catalog_name: catalog_name in string
             schema_name: schema_name in string
+            table_name: metrics table_name in string
         """
         for item in self.lakeview_json["datasets"]:
             item["query"] = re.sub(r"CATALOG_NAME", catalog_name, item["query"])
             item["query"] = re.sub(r"SCHEMA_NAME", schema_name, item["query"])
+            item["query"] = re.sub(r"TABLE_NAME", table_name, item["query"])
 
     @staticmethod
     def basee64_encode(x):

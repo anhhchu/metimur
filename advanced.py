@@ -186,8 +186,6 @@ else:
 # COMMAND ----------
 
 # DBTITLE 1,Run Workflow
-# from utils.databricks_client import DatabricksClient   
-
 # Step 1: create the client
 client = DatabricksClient(HOSTNAME, TOKEN, constants)
 

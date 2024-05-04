@@ -1,4 +1,8 @@
 {
+  "run_timestamp": "timestamp of the benchmark run",
+  "concurrency": "concurrency setting of the run",
+  "benchmark_catalog": "catalog of tables used in benchmark run",
+  "benchmark_schema": "schema of tables used in benchmark run",
   "query_id" : "The query id.",
   "id" : "The query id defined for the benchmark run.",
   "status" : "Query status",
