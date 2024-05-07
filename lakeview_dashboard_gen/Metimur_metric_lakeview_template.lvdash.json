@@ -1,39 +1,39 @@
 {
     "datasets": [
         {
-            "name": "8098549c",
-            "displayName": "last_run_timestamp",
-            "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
-        },
-        {
-            "name": "81e3e3fa",
+            "name": "2b37989d",
             "displayName": "average_duration",
-            "query": "select\n    id,\n    query_text,\n    warehouse_name,\n    avg(duration) as average_duration\nfrom\n(\n    SELECT \n        duration/1000 as duration,\n        metrics.planning_time_ms/1000 as query_planning_time,\n        metrics.execution_time_ms/1000 as query_execution_time,\n        metrics.compilation_time_ms/1000 as query_compliation_time,\n        * EXCEPT(duration, metrics)\n    FROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n)\ngroup by 1, 2, 3"
+            "query": "select\n    id,\n    query_text,\n    warehouse_name,\n    avg(duration) as average_duration\nfrom\n(\n    SELECT \n        duration/1000 as duration,\n        metrics.planning_time_ms/1000 as query_planning_time,\n        metrics.execution_time_ms/1000 as query_execution_time,\n        metrics.compilation_time_ms/1000 as query_compliation_time,\n        * EXCEPT(duration, metrics)\n    FROM CATALOG_NAME.SCEHMA_NAME.TABLE_NAME\n)\ngroup by 1, 2, 3"
         },
         {
-            "name": "b031fedc",
+            "name": "c8966ccb",
+            "displayName": "last_run_timestamp",
+            "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCEHMA_NAME.TABLE_NAME"
+        },
+        {
+            "name": "c9e5e0b6",
             "displayName": "metimur_metrics",
-            "query": "SELECT \n    duration/1000 as duration,\n    metrics.planning_time_ms/1000 as query_planning_time,\n    metrics.execution_time_ms/1000 as query_execution_time,\n    metrics.compilation_time_ms/1000 as query_compliation_time,\n    * EXCEPT(duration, metrics)\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
+            "query": "SELECT \n    duration/1000 as duration,\n    metrics.planning_time_ms/1000 as query_planning_time,\n    metrics.execution_time_ms/1000 as query_execution_time,\n    metrics.compilation_time_ms/1000 as query_compliation_time,\n    * EXCEPT(duration, metrics)\nFROM CATALOG_NAME.SCEHMA_NAME.TABLE_NAME"
         },
         {
-            "name": "e9cdd9e3",
+            "name": "df0b72e4",
             "displayName": "benchmark_config",
-            "query": "select distinct run_timestamp, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
+            "query": "select distinct run_timestamp, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCEHMA_NAME.TABLE_NAME"
         }
     ],
     "pages": [
         {
-            "name": "1a0d048d",
+            "name": "ed1984a3",
             "displayName": "New Page",
             "layout": [
                 {
                     "widget": {
-                        "name": "05409720",
+                        "name": "1a0108c2",
                         "queries": [
                             {
-                                "name": "dashboards/01eefd032f0114249bc5f60291dfed1c/datasets/01eefd14f4581e57947d9552d917f89c_warehouse_name",
+                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_warehouse_name",
                                 "query": {
-                                    "datasetName": "b031fedc",
+                                    "datasetName": "c9e5e0b6",
                                     "fields": [
                                         {
                                             "name": "warehouse_name",
@@ -56,7 +56,7 @@
                                     {
                                         "fieldName": "warehouse_name",
                                         "displayName": "warehouse_name",
-                                        "queryName": "dashboards/01eefd032f0114249bc5f60291dfed1c/datasets/01eefd14f4581e57947d9552d917f89c_warehouse_name"
+                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_warehouse_name"
                                     }
                                 ]
                             },
@@ -75,52 +75,12 @@
                 },
                 {
                     "widget": {
-                        "name": "1b01f42d",
+                        "name": "3ffc82fa",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "b031fedc",
-                                    "fields": [
-                                        {
-                                            "name": "max(duration)",
-                                            "expression": "MAX(`duration`)"
-                                        }
-                                    ],
-                                    "disaggregated": false
-                                }
-                            }
-                        ],
-                        "spec": {
-                            "version": 2,
-                            "widgetType": "counter",
-                            "encodings": {
-                                "value": {
-                                    "fieldName": "max(duration)",
-                                    "displayName": "Maximum duration"
-                                }
-                            },
-                            "frame": {
-                                "showTitle": true,
-                                "title": "Max Duration (sec)"
-                            }
-                        }
-                    },
-                    "position": {
-                        "x": 2,
-                        "y": 4,
-                        "width": 2,
-                        "height": 3
-                    }
-                },
-                {
-                    "widget": {
-                        "name": "1df9b6bc",
-                        "queries": [
-                            {
-                                "name": "main_query",
-                                "query": {
-                                    "datasetName": "b031fedc",
+                                    "datasetName": "c9e5e0b6",
                                     "fields": [
                                         {
                                             "name": "avg(duration)",
@@ -195,92 +155,12 @@
                 },
                 {
                     "widget": {
-                        "name": "28e8ce2c",
+                        "name": "5e015645",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "b031fedc",
-                                    "fields": [
-                                        {
-                                            "name": "min(duration)",
-                                            "expression": "MIN(`duration`)"
-                                        }
-                                    ],
-                                    "disaggregated": false
-                                }
-                            }
-                        ],
-                        "spec": {
-                            "version": 2,
-                            "widgetType": "counter",
-                            "encodings": {
-                                "value": {
-                                    "fieldName": "min(duration)",
-                                    "displayName": "Minimum duration"
-                                }
-                            },
-                            "frame": {
-                                "showTitle": true,
-                                "title": "Min Duration (sec)"
-                            }
-                        }
-                    },
-                    "position": {
-                        "x": 4,
-                        "y": 4,
-                        "width": 2,
-                        "height": 3
-                    }
-                },
-                {
-                    "widget": {
-                        "name": "2904dfea",
-                        "queries": [
-                            {
-                                "name": "main_query",
-                                "query": {
-                                    "datasetName": "b031fedc",
-                                    "fields": [
-                                        {
-                                            "name": "median(duration)",
-                                            "expression": "PERCENTILE(`duration`, 0.5)"
-                                        }
-                                    ],
-                                    "disaggregated": false
-                                }
-                            }
-                        ],
-                        "spec": {
-                            "version": 2,
-                            "widgetType": "counter",
-                            "encodings": {
-                                "value": {
-                                    "fieldName": "median(duration)",
-                                    "displayName": "Median of duration"
-                                }
-                            },
-                            "frame": {
-                                "showTitle": true,
-                                "title": "Median Duration (sec)"
-                            }
-                        }
-                    },
-                    "position": {
-                        "x": 0,
-                        "y": 4,
-                        "width": 2,
-                        "height": 3
-                    }
-                },
-                {
-                    "widget": {
-                        "name": "388cda0c",
-                        "queries": [
-                            {
-                                "name": "main_query",
-                                "query": {
-                                    "datasetName": "8098549c",
+                                    "datasetName": "c8966ccb",
                                     "fields": [
                                         {
                                             "name": "last_run_timestamp",
@@ -315,24 +195,195 @@
                 },
                 {
                     "widget": {
-                        "name": "45b00b17",
-                        "textbox_spec": "# Metimur Benchmark Metrics"
+                        "name": "62b84b31",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "2b37989d",
+                                    "fields": [
+                                        {
+                                            "name": "average_duration",
+                                            "expression": "`average_duration`"
+                                        },
+                                        {
+                                            "name": "id",
+                                            "expression": "`id`"
+                                        },
+                                        {
+                                            "name": "query_text",
+                                            "expression": "`query_text`"
+                                        },
+                                        {
+                                            "name": "warehouse_name",
+                                            "expression": "`warehouse_name`"
+                                        }
+                                    ],
+                                    "disaggregated": true
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 1,
+                            "widgetType": "table",
+                            "encodings": {
+                                "columns": [
+                                    {
+                                        "fieldName": "id",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 0,
+                                        "title": "id",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "id"
+                                    },
+                                    {
+                                        "fieldName": "query_text",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 1,
+                                        "title": "query_text",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "query_text"
+                                    },
+                                    {
+                                        "fieldName": "average_duration",
+                                        "numberFormat": "0.00",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 2,
+                                        "title": "average_duration",
+                                        "allowSearch": false,
+                                        "alignContent": "center",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "average_duration"
+                                    },
+                                    {
+                                        "fieldName": "warehouse_name",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 3,
+                                        "title": "warehouse_name",
+                                        "allowSearch": false,
+                                        "alignContent": "center",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "warehouse_name"
+                                    }
+                                ]
+                            },
+                            "invisibleColumns": [],
+                            "allowHTMLByDefault": false,
+                            "itemsPerPage": 10,
+                            "paginationSize": "default",
+                            "condensed": false,
+                            "withRowNumber": false,
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Query Details and Warehouse Configuation",
+                                "showDescription": false
+                            }
+                        }
                     },
                     "position": {
                         "x": 0,
-                        "y": 0,
-                        "width": 4,
-                        "height": 2
+                        "y": 22,
+                        "width": 6,
+                        "height": 13
                     }
                 },
                 {
                     "widget": {
-                        "name": "682b552a",
+                        "name": "6cd869fc",
                         "queries": [
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0c3c640919678416013fc9b68edb_run_timestamp",
+                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_run_timestamp",
                                 "query": {
-                                    "datasetName": "b031fedc",
+                                    "datasetName": "c9e5e0b6",
+                                    "fields": [
+                                        {
+                                            "name": "run_timestamp",
+                                            "expression": "`run_timestamp`"
+                                        },
+                                        {
+                                            "name": "run_timestamp_associativity",
+                                            "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            },
+                            {
+                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579f1a6e95f84bba1c832ff3_run_timestamp",
+                                "query": {
+                                    "datasetName": "df0b72e4",
                                     "fields": [
                                         {
                                             "name": "run_timestamp",
@@ -355,7 +406,12 @@
                                     {
                                         "fieldName": "run_timestamp",
                                         "displayName": "run_timestamp",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0c3c640919678416013fc9b68edb_run_timestamp"
+                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_run_timestamp"
+                                    },
+                                    {
+                                        "fieldName": "run_timestamp",
+                                        "displayName": "run_timestamp",
+                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579f1a6e95f84bba1c832ff3_run_timestamp"
                                     }
                                 ]
                             },
@@ -374,12 +430,12 @@
                 },
                 {
                     "widget": {
-                        "name": "758ef57f",
+                        "name": "72814629",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "e9cdd9e3",
+                                    "datasetName": "df0b72e4",
                                     "fields": [
                                         {
                                             "name": "benchmark_catalog",
@@ -541,12 +597,24 @@
                 },
                 {
                     "widget": {
-                        "name": "84f79be4",
+                        "name": "7827e760",
+                        "textbox_spec": "# Metimur Benchmark Metrics"
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 4,
+                        "height": 2
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "9c4cbca5",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "b031fedc",
+                                    "datasetName": "c9e5e0b6",
                                     "fields": [
                                         {
                                             "name": "avg(query_compliation_time)",
@@ -632,20 +700,16 @@
                 },
                 {
                     "widget": {
-                        "name": "8c94b595",
+                        "name": "cfa1dd79",
                         "queries": [
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0c3c640919678416013fc9b68edb_id",
+                                "name": "main_query",
                                 "query": {
-                                    "datasetName": "b031fedc",
+                                    "datasetName": "c9e5e0b6",
                                     "fields": [
                                         {
-                                            "name": "id",
-                                            "expression": "`id`"
-                                        },
-                                        {
-                                            "name": "id_associativity",
-                                            "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                                            "name": "max(duration)",
+                                            "expression": "MAX(`duration`)"
                                         }
                                     ],
                                     "disaggregated": false
@@ -654,37 +718,74 @@
                         ],
                         "spec": {
                             "version": 2,
-                            "widgetType": "filter-single-select",
+                            "widgetType": "counter",
                             "encodings": {
-                                "fields": [
-                                    {
-                                        "fieldName": "id",
-                                        "displayName": "id",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0c3c640919678416013fc9b68edb_id"
-                                    }
-                                ]
+                                "value": {
+                                    "fieldName": "max(duration)",
+                                    "displayName": "Maximum duration"
+                                }
                             },
                             "frame": {
                                 "showTitle": true,
-                                "title": "Query"
+                                "title": "Max Duration (sec)"
                             }
                         }
                     },
                     "position": {
-                        "x": 5,
-                        "y": 2,
-                        "width": 1,
-                        "height": 2
+                        "x": 2,
+                        "y": 4,
+                        "width": 2,
+                        "height": 3
                     }
                 },
                 {
                     "widget": {
-                        "name": "985db04c",
+                        "name": "d6bfa240",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "b031fedc",
+                                    "datasetName": "c9e5e0b6",
+                                    "fields": [
+                                        {
+                                            "name": "median(duration)",
+                                            "expression": "PERCENTILE(`duration`, 0.5)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "counter",
+                            "encodings": {
+                                "value": {
+                                    "fieldName": "median(duration)",
+                                    "displayName": "Median of duration"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Median Duration (sec)"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 4,
+                        "width": 2,
+                        "height": 3
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "e365ae81",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "c9e5e0b6",
                                     "fields": [
                                         {
                                             "name": "bin(duration, binWidth=0.1)",
@@ -756,168 +857,89 @@
                 },
                 {
                     "widget": {
-                        "name": "c802fd2b",
+                        "name": "f7ae04d6",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "81e3e3fa",
+                                    "datasetName": "c9e5e0b6",
                                     "fields": [
                                         {
-                                            "name": "average_duration",
-                                            "expression": "`average_duration`"
-                                        },
+                                            "name": "min(duration)",
+                                            "expression": "MIN(`duration`)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "counter",
+                            "encodings": {
+                                "value": {
+                                    "fieldName": "min(duration)",
+                                    "displayName": "Minimum duration"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Min Duration (sec)"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 4,
+                        "y": 4,
+                        "width": 2,
+                        "height": 3
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "faa1f503",
+                        "queries": [
+                            {
+                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0c3c640919678416013fc9b68edb_id",
+                                "query": {
+                                    "datasetName": "c9e5e0b6",
+                                    "fields": [
                                         {
                                             "name": "id",
                                             "expression": "`id`"
                                         },
                                         {
-                                            "name": "query_text",
-                                            "expression": "`query_text`"
-                                        },
-                                        {
-                                            "name": "warehouse_name",
-                                            "expression": "`warehouse_name`"
+                                            "name": "id_associativity",
+                                            "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                                         }
                                     ],
-                                    "disaggregated": true
+                                    "disaggregated": false
                                 }
                             }
                         ],
                         "spec": {
-                            "version": 1,
-                            "widgetType": "table",
+                            "version": 2,
+                            "widgetType": "filter-single-select",
                             "encodings": {
-                                "columns": [
+                                "fields": [
                                     {
                                         "fieldName": "id",
-                                        "booleanValues": [
-                                            "false",
-                                            "true"
-                                        ],
-                                        "imageUrlTemplate": "{{ @ }}",
-                                        "imageTitleTemplate": "{{ @ }}",
-                                        "imageWidth": "",
-                                        "imageHeight": "",
-                                        "linkUrlTemplate": "{{ @ }}",
-                                        "linkTextTemplate": "{{ @ }}",
-                                        "linkTitleTemplate": "{{ @ }}",
-                                        "linkOpenInNewTab": true,
-                                        "type": "string",
-                                        "displayAs": "string",
-                                        "visible": true,
-                                        "order": 0,
-                                        "title": "id",
-                                        "allowSearch": false,
-                                        "alignContent": "left",
-                                        "allowHTML": false,
-                                        "highlightLinks": false,
-                                        "useMonospaceFont": false,
-                                        "preserveWhitespace": false,
-                                        "displayName": "id"
-                                    },
-                                    {
-                                        "fieldName": "query_text",
-                                        "booleanValues": [
-                                            "false",
-                                            "true"
-                                        ],
-                                        "imageUrlTemplate": "{{ @ }}",
-                                        "imageTitleTemplate": "{{ @ }}",
-                                        "imageWidth": "",
-                                        "imageHeight": "",
-                                        "linkUrlTemplate": "{{ @ }}",
-                                        "linkTextTemplate": "{{ @ }}",
-                                        "linkTitleTemplate": "{{ @ }}",
-                                        "linkOpenInNewTab": true,
-                                        "type": "string",
-                                        "displayAs": "string",
-                                        "visible": true,
-                                        "order": 1,
-                                        "title": "query_text",
-                                        "allowSearch": false,
-                                        "alignContent": "left",
-                                        "allowHTML": false,
-                                        "highlightLinks": false,
-                                        "useMonospaceFont": false,
-                                        "preserveWhitespace": false,
-                                        "displayName": "query_text"
-                                    },
-                                    {
-                                        "fieldName": "average_duration",
-                                        "numberFormat": "0.00",
-                                        "booleanValues": [
-                                            "false",
-                                            "true"
-                                        ],
-                                        "imageUrlTemplate": "{{ @ }}",
-                                        "imageTitleTemplate": "{{ @ }}",
-                                        "imageWidth": "",
-                                        "imageHeight": "",
-                                        "linkUrlTemplate": "{{ @ }}",
-                                        "linkTextTemplate": "{{ @ }}",
-                                        "linkTitleTemplate": "{{ @ }}",
-                                        "linkOpenInNewTab": true,
-                                        "type": "float",
-                                        "displayAs": "number",
-                                        "visible": true,
-                                        "order": 2,
-                                        "title": "average_duration",
-                                        "allowSearch": false,
-                                        "alignContent": "center",
-                                        "allowHTML": false,
-                                        "highlightLinks": false,
-                                        "useMonospaceFont": false,
-                                        "preserveWhitespace": false,
-                                        "displayName": "average_duration"
-                                    },
-                                    {
-                                        "fieldName": "warehouse_name",
-                                        "booleanValues": [
-                                            "false",
-                                            "true"
-                                        ],
-                                        "imageUrlTemplate": "{{ @ }}",
-                                        "imageTitleTemplate": "{{ @ }}",
-                                        "imageWidth": "",
-                                        "imageHeight": "",
-                                        "linkUrlTemplate": "{{ @ }}",
-                                        "linkTextTemplate": "{{ @ }}",
-                                        "linkTitleTemplate": "{{ @ }}",
-                                        "linkOpenInNewTab": true,
-                                        "type": "string",
-                                        "displayAs": "string",
-                                        "visible": true,
-                                        "order": 3,
-                                        "title": "warehouse_name",
-                                        "allowSearch": false,
-                                        "alignContent": "center",
-                                        "allowHTML": false,
-                                        "highlightLinks": false,
-                                        "useMonospaceFont": false,
-                                        "preserveWhitespace": false,
-                                        "displayName": "warehouse_name"
+                                        "displayName": "id",
+                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0c3c640919678416013fc9b68edb_id"
                                     }
                                 ]
                             },
-                            "invisibleColumns": [],
-                            "allowHTMLByDefault": false,
-                            "itemsPerPage": 10,
-                            "paginationSize": "default",
-                            "condensed": false,
-                            "withRowNumber": false,
                             "frame": {
                                 "showTitle": true,
-                                "title": "Query Details and Warehouse Configuation",
-                                "showDescription": false
+                                "title": "Query"
                             }
                         }
                     },
                     "position": {
-                        "x": 0,
-                        "y": 22,
-                        "width": 6,
-                        "height": 13
+                        "x": 5,
+                        "y": 2,
+                        "width": 1,
+                        "height": 2
                     }
                 }
             ]
