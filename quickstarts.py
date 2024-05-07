@@ -59,6 +59,7 @@
 # COMMAND ----------
 
 # MAGIC %pip install -r requirements.txt -q
+# MAGIC %pip install databricks-sdk --upgrade -q
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -441,7 +442,12 @@ create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_na
 lv_api = lakeview_dash_manager(host=HOSTNAME, token=TOKEN)
 lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json")
 lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
-lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
+dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
+print(f"Dashboard us ready at {dashboard_link}")
+
+# COMMAND ----------
+
+lv_workspace_path
 
 # COMMAND ----------
 

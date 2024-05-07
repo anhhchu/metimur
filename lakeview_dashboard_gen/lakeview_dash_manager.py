@@ -55,15 +55,17 @@ class lakeview_dash_manager:
             api resonse (expect to be 200 for success)
         """
         url = f"{self.url_base}/import"
-        path = f"{path}/{dashboard_name}.lvdash.json"
+        path_full = f"{path}/{dashboard_name}.lvdash.json"
         data = {
             "content": self.basee64_encode(json.dumps(self.lakeview_json)),
-            "path": path,
+            "path": path_full,
             "overwrite": True,
             "format": "AUTO",
         }
         response = requests.post(url, headers=self.headers, json=data)
-        return response.json()
+        if response.status_code != 200:
+            raise Exception(f"Unexpected status code: {response.status_code}")
+        return self.get_dashboard_links(path, dashboard_name)
     
     def save_dash_local(self, path):
         """save lakeview dashboard json to local file
@@ -96,6 +98,26 @@ class lakeview_dash_manager:
             item["query"] = re.sub(r"CATALOG_NAME", catalog_name, item["query"])
             item["query"] = re.sub(r"SCHEMA_NAME", schema_name, item["query"])
             item["query"] = re.sub(r"TABLE_NAME", table_name, item["query"])
+
+    def get_dashboard_links(self, path, dashboard_name):
+        """Get the dashboard_id based on workspace path of a dashboard
+        http link follows the format of {workspace_host}/sql/dashboardsv3/{dashboard_id}
+        
+        Args:
+            path: workspace path in string
+            dashboard_name: lakeview dashboard name to write to
+
+        Return: 
+            dashboard http links
+        """
+        url = f"{self.url_base}/get-status"
+        path_full = f"{path}/{dashboard_name}.lvdash.json"
+        data = {
+            "path": path_full,
+        }
+        response = requests.get(url, headers=self.headers, json=data)
+        dashboard_id = response.json().get('resource_id')
+        return f"https://{self.host}/sql/dashboardsv3/{dashboard_id}"
 
     @staticmethod
     def basee64_encode(x):
