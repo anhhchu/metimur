@@ -79,13 +79,6 @@ spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC
-# MAGIC ## We may have to use alternative Approach to authentication due to [this depreciation](https://databricks.atlassian.net/wiki/spaces/KB/pages/571998630/Accessing+the+Databricks+REST+API+from+notebooks+using+internal+tokens)
-# MAGIC
-
-# COMMAND ----------
-
 logger = logging.getLogger()
 
 HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
@@ -366,10 +359,8 @@ fig.show()
 # MAGIC ## Set up Lakeview Parameters
 # MAGIC
 # MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
-# MAGIC * Each user will have their own delta table to save all benchmark runs at `serverless_benchmark.default._metimur_metrics_{user_name}`, only table owner can query the metrics for the benchmark
-# MAGIC * Each user will have their dashboard assets saved in their user workspace location, 
-# MAGIC
-# MAGIC TODO: decide on the method to extract token and username from workspace client or notebook context
+# MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`, only table owner can query the metrics for the own benchmarks
+# MAGIC * Each user will have their dashboard assets saved in their user workspace location
 
 # COMMAND ----------
 
@@ -384,16 +375,6 @@ def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
   spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
 
   print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
-
-# COMMAND ----------
-
-# from databricks.sdk import WorkspaceClient
-
-# w = WorkspaceClient(host=f"https://{HOSTNAME}", token=TOKEN)
-
-# me = w.current_user.me()
-
-# user_name = me.as_dict()["emails"][0]["value"]
 
 # COMMAND ----------
 
@@ -415,8 +396,6 @@ set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 
 # MAGIC %md
 # MAGIC ## Create a delta table for Lakeview Dashboard
-# MAGIC * TODO: decide if the view is necessary, can we just create dashboard on delta table => [Anh] I already made this change
-# MAGIC * TODO: should we zorder metrics table by run_timestamp
 
 # COMMAND ----------
 
@@ -435,7 +414,7 @@ lv_api = lakeview_dash_manager(host=HOSTNAME, token=TOKEN)
 lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json")
 lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
 dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
-print(f"Dashboard us ready at {dashboard_link}")
+print(f"Dashboard is ready at: {dashboard_link}")
 
 # COMMAND ----------
 

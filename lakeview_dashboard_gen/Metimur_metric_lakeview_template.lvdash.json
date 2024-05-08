@@ -3,22 +3,22 @@
         {
             "name": "2b37989d",
             "displayName": "average_duration",
-            "query": "select\n    id,\n    query_text,\n    warehouse_name,\n    avg(duration) as average_duration\nfrom\n(\n    SELECT \n        duration/1000 as duration,\n        metrics.planning_time_ms/1000 as query_planning_time,\n        metrics.execution_time_ms/1000 as query_execution_time,\n        metrics.compilation_time_ms/1000 as query_compliation_time,\n        * EXCEPT(duration, metrics)\n    FROM CATALOG_NAME.SCEHMA_NAME.TABLE_NAME\n)\ngroup by 1, 2, 3"
+            "query": "select\n    id,\n    query_text,\n    warehouse_name,\n    avg(duration) as average_duration\nfrom\n(\n    SELECT \n        duration/1000 as duration,\n        metrics.planning_time_ms/1000 as query_planning_time,\n        metrics.execution_time_ms/1000 as query_execution_time,\n        metrics.compilation_time_ms/1000 as query_compliation_time,\n        * EXCEPT(duration, metrics)\n    FROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n)\ngroup by 1, 2, 3"
         },
         {
             "name": "c8966ccb",
             "displayName": "last_run_timestamp",
-            "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCEHMA_NAME.TABLE_NAME"
+            "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
         },
         {
             "name": "c9e5e0b6",
             "displayName": "metimur_metrics",
-            "query": "SELECT \n    duration/1000 as duration,\n    metrics.planning_time_ms/1000 as query_planning_time,\n    metrics.execution_time_ms/1000 as query_execution_time,\n    metrics.compilation_time_ms/1000 as query_compliation_time,\n    * EXCEPT(duration, metrics)\nFROM CATALOG_NAME.SCEHMA_NAME.TABLE_NAME"
+            "query": "SELECT \n    duration/1000 as duration,\n    metrics.planning_time_ms/1000 as query_planning_time,\n    metrics.execution_time_ms/1000 as query_execution_time,\n    metrics.compilation_time_ms/1000 as query_compliation_time,\n    * EXCEPT(duration, metrics)\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
         },
         {
             "name": "df0b72e4",
             "displayName": "benchmark_config",
-            "query": "select distinct run_timestamp, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCEHMA_NAME.TABLE_NAME"
+            "query": "select distinct run_timestamp, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
         }
     ],
     "pages": [
