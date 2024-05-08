@@ -338,7 +338,8 @@ fig.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Create Dashboard
+# MAGIC # View Benchmark Metrics in Lakeview Dashboard
+# MAGIC Review the metrics for all your benchmark runs in below dashboard
 
 # COMMAND ----------
 
@@ -357,9 +358,8 @@ fig.show()
 
 # MAGIC %md
 # MAGIC ## Set up Lakeview Parameters
-# MAGIC
-# MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
 # MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`, only table owner can query the metrics for the own benchmarks
+# MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
 # MAGIC * Each user will have their dashboard assets saved in their user workspace location
 
 # COMMAND ----------
@@ -415,7 +415,3 @@ lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_templat
 lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
 dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
 print(f"Dashboard is ready at: {dashboard_link}")
-
-# COMMAND ----------
-
-
