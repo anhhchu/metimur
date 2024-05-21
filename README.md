@@ -8,6 +8,8 @@
 
 This accelerator utilizes DatabricksLabs [dbldatagen](https://github.com/databrickslabs/dbldatagen) library for DataFrame generation, [Beaker](https://github.com/goodwillpunning/beaker) library for query benchmarking, and [TPC-DS Runner](https://github.com/AbePabbathi/lakehouse-tacklebox/tree/main/30-performance/TPC-DS%20Runner) created by mberk06
 
+Demo Recording: https://www.youtube.com/watch?v=JBlqoay8_3o
+
 ![lemur](./assets/lemur_torch.jpeg)
 
 # Table of Contents
