@@ -11,3 +11,4 @@ queries/adp
 venv/
 .bkup
 extras/.env
+.venv/

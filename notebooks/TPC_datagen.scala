@@ -1,4 +1,8 @@
 // Databricks notebook source
+spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
+
+// COMMAND ----------
+
 dbutils.widgets.text("catalogName", "serverless_benchmark")
 dbutils.widgets.text("schemaName", "")
 

@@ -59,6 +59,7 @@
 # COMMAND ----------
 
 # MAGIC %pip install -r requirements.txt -q
+# MAGIC %pip install databricks-sdk --upgrade -q
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -70,8 +71,15 @@ from databricks.sdk import WorkspaceClient
 import os
 import requests
 import re
+from pyspark.sql.functions import lit
 
 # COMMAND ----------
+
+spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
+
+# COMMAND ----------
+
+logger = logging.getLogger()
 
 HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
 TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
@@ -278,11 +286,25 @@ elif benchmark_choice == "multiple-warehouses-size":
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Benchmark Result
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC Below graph shows average duration of all queries in the warehouse history from start to end of benchmark, broken down by warehouses
 
 # COMMAND ----------
 
-display(metrics_pdf)
+metrics_sdf = (
+  spark.createDataFrame(metrics_pdf)
+                  .withColumn("concurrency", lit(concurrency))
+                  .withColumn("benchmark_catalog", lit(catalog_name))
+                  .withColumn("benchmark_schema", lit(schema_name))
+                  .selectExpr("current_timestamp() as run_timestamp", "concurrency", 
+                              "id", "warehouse_name", "benchmark_catalog", "benchmark_schema",
+                              "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema)")
+)
+display(metrics_sdf)
 
 # COMMAND ----------
 
@@ -316,3 +338,84 @@ fig.update_layout(
 # Display the chart
 fig.show()
 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # View Benchmark Metrics in Lakeview Dashboard
+# MAGIC Review the metrics for all your benchmark runs in below dashboard
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Load Modules
+
+# COMMAND ----------
+
+# MAGIC %run ./lakeview_dashboard_gen/benchmark_dash_utils
+
+# COMMAND ----------
+
+# MAGIC %run ./lakeview_dashboard_gen/lakeview_dash_manager
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Set up Lakeview Parameters
+# MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`, only table owner can query the metrics for the own benchmarks
+# MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
+# MAGIC * Each user will have their dashboard assets saved in their user workspace location
+
+# COMMAND ----------
+
+def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
+  spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
+  spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
+  spark.sql(f"GRANT CREATE SCHEMA ON CATALOG {catalog} TO `account users`")
+  spark.sql(f"USE catalog {catalog}")
+  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+  spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
+  spark.sql(f"USE {catalog}.{schema}")
+  spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
+
+  print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
+
+# COMMAND ----------
+
+
+user_name = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+lv_workspace_path = f"/Users/{user_name}"
+lv_dashboard_name = "metimur_benchmark_metrics_dashboard"
+print(f"Lakeview dashboard assets saved at: {lv_workspace_path}")
+
+user_name_clean = user_name.replace(".", "_").replace("@", "_")
+
+lv_metrics_table_name = f"_metimur_metrics_{user_name_clean}"
+lv_catalog_name = "serverless_benchmark"
+lv_schema_name = "default"
+
+set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Create a delta table for Lakeview Dashboard
+
+# COMMAND ----------
+
+create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name, overwrite=False)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC ## Create a Lakeview dashboard from the template 
+# MAGIC * `./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json`
+
+# COMMAND ----------
+
+lv_api = lakeview_dash_manager(host=HOSTNAME, token=TOKEN)
+lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json")
+lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
+dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
+print(f"Dashboard is ready at: {dashboard_link}")

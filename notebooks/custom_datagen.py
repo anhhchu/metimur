@@ -31,6 +31,10 @@ schema_path = dbutils.widgets.get("schema_path")
 
 # COMMAND ----------
 
+spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # Generate data
 # MAGIC
