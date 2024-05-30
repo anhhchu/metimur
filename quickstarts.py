@@ -313,6 +313,9 @@ import plotly.graph_objects as go
 # Group the metrics by 'id' and 'warehouse_name' and calculate the average duration
 grouped_metrics = metrics_pdf.groupby(['id', 'warehouse_name']).mean(numeric_only=True)['duration'].reset_index()
 
+# Convert duration from milliseconds to seconds
+grouped_metrics['duration'] = grouped_metrics['duration'] / 1000
+
 # Create a stacked bar chart using Plotly
 fig = go.Figure()
 
@@ -328,12 +331,13 @@ for warehouse_name in grouped_metrics['warehouse_name'].unique():
 # Set the layout of the chart
 fig.update_layout(
     xaxis_title='ID',
-    yaxis_title='Duration (ms)',
+    yaxis_title='Duration (secs)',
     title='Query Duration by Warehouse'
 )
 
 # Display the chart
 fig.show()
+
 
 # COMMAND ----------
 
