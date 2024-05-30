@@ -316,12 +316,3 @@ fig.update_layout(
 # Display the chart
 fig.show()
 
-# COMMAND ----------
-
-# Save metrics to delta table 
-df = (spark.createDataFrame(metrics_pdf)
-        .drop("user_display_name", "lookup_key", "canSubscribeToLiveQuery")
-        .selectExpr("current_timestamp() as run_timestamp", "id", "warehouse_name", "* except(id, warehouse_name)")
-)
-display(df)
-#write.mode('overwrite').saveAsTable(f""
