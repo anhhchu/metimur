@@ -2,6 +2,7 @@
 from pyspark.sql.functions import col, map_keys
 from pyspark.sql.types import IntegerType, MapType, StructType
 import json
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 
 def flatten_map(df, fields):
@@ -59,6 +60,9 @@ def get_comments_from_json(file_path):
         comments = json.load(f)
     return comments
 
+def _add_comments(table, col, comment):
+    alter_sql = f"ALTER TABLE {table} ALTER COLUMN {col} COMMENT {comment};"
+    spark.sql(alter_sql)
 
 def create_table_from_df(df, 
                         spark, 
@@ -79,6 +83,8 @@ def create_table_from_df(df,
     print(f"Write the dataframe into {catalog_name}.{schema_name}.{table_name}")
     spark.sql(f"USE catalog {catalog_name};")
     spark.sql(f"USE schema {schema_name};")
+    table_exists = spark.catalog.tableExists(f"{catalog_name}.{schema_name}.{table_name}")
+
     if overwrite:
         (
         df.write
@@ -89,12 +95,17 @@ def create_table_from_df(df,
     else:
         (df.write
         .mode("append")
+        .option("mergeSchema", "true")
         .saveAsTable(table_name))
 
-    # create sql script with comments
-    print("Add comments to table columns")
-    comments = get_comments_from_json(comments_file_path)
-    for col in df.columns:
-        alter_sql = f"ALTER TABLE {catalog_name}.{schema_name}.{table_name} ALTER COLUMN {col} COMMENT '{comments.get(col)}';"
+    ## Add comment to each column on newly created table
+    if not table_exists:
+        print("Add comments to table columns")
+        comments = get_comments_from_json(comments_file_path)
+        alter_sql = f"ALTER TABLE {catalog_name}.{schema_name}.{table_name} "
+        alter_statements = []
+        for col in df.columns:
+            alter_statement = f"ALTER COLUMN {col} COMMENT '{comments.get(col)}'"
+            alter_statements.append(alter_statement)
+        alter_sql += ", ".join(alter_statements)
         spark.sql(alter_sql)
-    

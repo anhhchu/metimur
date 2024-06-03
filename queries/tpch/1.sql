@@ -1,3 +1,6 @@
+--Q00--
+SELECT * FROM lineitem;
+
 --Q01--
 SELECT
   l_returnflag,

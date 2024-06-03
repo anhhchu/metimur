@@ -59,7 +59,6 @@
 # COMMAND ----------
 
 # MAGIC %pip install -r requirements.txt -q
-# MAGIC %pip install databricks-sdk --upgrade -q
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -141,9 +140,14 @@ elif benchmark_choice == "one-warehouse":
 
 # COMMAND ----------
 
-tables = spark.sql(f"show tables in {catalog_name}.{schema_name}").select("tableName").collect()
-tables = [row["tableName"] for row in tables]
-tables
+# tables = spark.sql(f"show tables in {catalog_name}.{schema_name}").select("tableName").collect()
+# tables = [row["tableName"] for row in tables]
+# tables
+
+### List all tables under catalog_name.schema_name using listTables API
+tables = spark.catalog.listTables(f"{catalog_name}.{schema_name}")
+table_names = [table.name for table in tables]
+table_names
 
 # COMMAND ----------
 
@@ -362,26 +366,20 @@ fig.show()
 
 # MAGIC %md
 # MAGIC ## Set up Lakeview Parameters
-# MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`, only table owner can query the metrics for the own benchmarks
-# MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
+# MAGIC * Each user will have all benchmark runs saved in Delta table at `hive_metastore.serverless_benchmark._metimur_metrics_{user_name}`
+# MAGIC * All users in the workspace can create table in `hive_metastore.serverless_benchmark`
 # MAGIC * Each user will have their dashboard assets saved in their user workspace location
 
 # COMMAND ----------
 
 def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
-  spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
-  spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
-  spark.sql(f"GRANT CREATE SCHEMA ON CATALOG {catalog} TO `account users`")
   spark.sql(f"USE catalog {catalog}")
   spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
-  spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
   spark.sql(f"USE {catalog}.{schema}")
-  spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
 
   print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
 
 # COMMAND ----------
-
 
 user_name = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
 lv_workspace_path = f"/Users/{user_name}"
@@ -390,9 +388,9 @@ print(f"Lakeview dashboard assets saved at: {lv_workspace_path}")
 
 user_name_clean = user_name.replace(".", "_").replace("@", "_")
 
-lv_metrics_table_name = f"_metimur_metrics_{user_name_clean}"
-lv_catalog_name = "serverless_benchmark"
-lv_schema_name = "default"
+lv_metrics_table_name = f"_metimur_metrics4_{user_name_clean}"
+lv_catalog_name = "hive_metastore"
+lv_schema_name = "serverless_benchmark"
 
 set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 
@@ -404,6 +402,11 @@ set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 # COMMAND ----------
 
 create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name, overwrite=False)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC desc history hive_metastore.serverless_benchmark._metimur_metrics4_anhhoang_chu_databricks_com
 
 # COMMAND ----------
 
@@ -419,3 +422,18 @@ lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_templat
 lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
 dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
 print(f"Dashboard is ready at: {dashboard_link}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Maintain Metrics table
+
+# COMMAND ----------
+
+# Optimize metrics table
+spark.sql(f"optimize {lv_catalog_name}.{lv_schema_name}.{lv_metrics_table_name} zorder by (run_timestamp)").display()
+
+# COMMAND ----------
+
+# Desc detail of metrics delta table
+spark.sql(f"desc detail {lv_catalog_name}.{lv_schema_name}.{lv_metrics_table_name}").display()
