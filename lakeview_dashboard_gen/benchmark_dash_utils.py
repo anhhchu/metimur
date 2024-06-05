@@ -102,10 +102,7 @@ def create_table_from_df(df,
     if not table_exists:
         print("Add comments to table columns")
         comments = get_comments_from_json(comments_file_path)
-        alter_sql = f"ALTER TABLE {catalog_name}.{schema_name}.{table_name} "
-        alter_statements = []
+        alter_table = f"ALTER TABLE {catalog_name}.{schema_name}.{table_name} "
         for col in df.columns:
-            alter_statement = f"ALTER COLUMN {col} COMMENT '{comments.get(col)}'"
-            alter_statements.append(alter_statement)
-        alter_sql += ", ".join(alter_statements)
-        spark.sql(alter_sql)
+            alter_statement = f"{alter_table} ALTER COLUMN {col} COMMENT '{comments.get(col)}';"
+            spark.sql(alter_statement)

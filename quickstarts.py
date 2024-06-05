@@ -8,7 +8,9 @@
 # MAGIC
 # MAGIC ## Getting Started
 # MAGIC
-# MAGIC 1. Set Up: Run Each cell under the "Set up" section manually to set up parameters.
+# MAGIC 1. Set Up: 
+# MAGIC   * Attach a Databricks personal compute with DBR14.3+ to this notebook
+# MAGIC   * Run Each cell under the "Set up" section manually to set up parameters.
 # MAGIC 2. Parameters Update: Update the parameters based on your requirements or keep the default values to observe the functionality.
 # MAGIC 3. Executing the Notebook: After making the necessary changes, you can click "Run" or "Run All" to execute the entire notebook with the updated parameters.
 # MAGIC 4. Warehouses will be stopped right after benchmarking is completed
@@ -144,10 +146,10 @@ elif benchmark_choice == "one-warehouse":
 # tables = [row["tableName"] for row in tables]
 # tables
 
-### List all tables under catalog_name.schema_name using listTables API
-tables = spark.catalog.listTables(f"{catalog_name}.{schema_name}")
-table_names = [table.name for table in tables]
-table_names
+### List all tables under catalog_name.schema_name using spark.catalog.X api in DBR 14.2 or later
+tables_list = spark.catalog.listTables(f"{catalog_name}.{schema_name}")
+tables = [table.name for table in tables_list]
+tables
 
 # COMMAND ----------
 
@@ -366,16 +368,22 @@ fig.show()
 
 # MAGIC %md
 # MAGIC ## Set up Lakeview Parameters
-# MAGIC * Each user will have all benchmark runs saved in Delta table at `hive_metastore.serverless_benchmark._metimur_metrics_{user_name}`
-# MAGIC * All users in the workspace can create table in `hive_metastore.serverless_benchmark`
+# MAGIC * You will need permission to CREATE CATALOG and CREATE SCHEMA in Unity Catalog to proceed
+# MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`
+# MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
 # MAGIC * Each user will have their dashboard assets saved in their user workspace location
 
 # COMMAND ----------
 
 def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
+  spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
+  spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
+  spark.sql(f"GRANT CREATE SCHEMA ON CATALOG {catalog} TO `account users`")
   spark.sql(f"USE catalog {catalog}")
   spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+  spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
   spark.sql(f"USE {catalog}.{schema}")
+  spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
 
   print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
 
@@ -388,9 +396,9 @@ print(f"Lakeview dashboard assets saved at: {lv_workspace_path}")
 
 user_name_clean = user_name.replace(".", "_").replace("@", "_")
 
-lv_metrics_table_name = f"_metimur_metrics4_{user_name_clean}"
-lv_catalog_name = "hive_metastore"
-lv_schema_name = "serverless_benchmark"
+lv_metrics_table_name = f"_metimur_metrics_{user_name_clean}"
+lv_catalog_name = "serverless_benchmark"
+lv_schema_name = "default"
 
 set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 
@@ -402,11 +410,6 @@ set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 # COMMAND ----------
 
 create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name, overwrite=False)
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC desc history hive_metastore.serverless_benchmark._metimur_metrics4_anhhoang_chu_databricks_com
 
 # COMMAND ----------
 
@@ -437,3 +440,7 @@ spark.sql(f"optimize {lv_catalog_name}.{lv_schema_name}.{lv_metrics_table_name} 
 
 # Desc detail of metrics delta table
 spark.sql(f"desc detail {lv_catalog_name}.{lv_schema_name}.{lv_metrics_table_name}").display()
+
+# COMMAND ----------
+
+
