@@ -32,6 +32,7 @@ Demo Recording: https://www.youtube.com/watch?v=JBlqoay8_3o
 # Requirements
 * Databricks workspace with Serverless and Unity Catalog enabled
 * Python 3.9+
+* Databricks Runtime 14.3+
 
 # When to Use
 
