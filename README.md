@@ -48,8 +48,9 @@ The **quickstart** notebook provides a convenient way to execute queries concurr
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
 1. Open **quickstarts** notebook on Databricks workspace.
-2. Follow the instruction in the notebook
-3. Click `Run/Run All`
+2. Connect the notebook to Single User Cluster with DBR14.3+ LTS
+3. Follow the instruction in the notebook
+4. Click `Run/Run All`
 
 ### Output
 
@@ -79,9 +80,10 @@ You want to generate synthetic data based on table schemas, and benchmark the qu
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
 1. Open **advanced** notebook on Databricks workspace.
-2. Run each cell in "Set Up" section
-3. Choose `BYOD` in the drop down **benchmarks** widget
-4. Upload your user-defined schema file for each table to the **schemas** folder. Follow the example in **schemas/tpch**. 
+2. Connect the notebook to Single User Cluster with DBR14.3+ LTS
+3. Run each cell in "Set Up" section
+4. Choose `BYOD` in the drop down **benchmarks** widget
+5. Upload your user-defined schema file for each table to the **schemas** folder. Follow the example in **schemas/tpch**. 
 
     <details>
     <summary>Table Schema Example</summary>
@@ -118,7 +120,7 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
     ```
     </detail>
 
-5. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget
+6. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget
   * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
 
     ```
@@ -153,9 +155,10 @@ You want to test Databricks SQL Warehouses performance at different scale factor
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
 1. Open **advanced** notebook on Databricks workspace.
-2. Run each cell in "Set Up" section
-3. Choose `TPCH` or `TPCDS` in the drop down **Benchmarks** widget and the **Scale Factors**
-4. Set the **Query Path** widget to `queries/tpch` or `queries/tpcds`
+2. Connect the notebook to Single User Cluster with DBR14.3+ LTS
+3. Run each cell in "Set Up" section
+4. Choose `TPCH` or `TPCDS` in the drop down **Benchmarks** widget and the **Scale Factors**
+5. Set the **Query Path** widget to `queries/tpch` or `queries/tpcds`
 
 ### Output
 
