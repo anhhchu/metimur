@@ -60,7 +60,7 @@ Sample query to extract cost per query, require permission to databricks systems
 https://docs.databricks.com/en/admin/system-tables/index.html
 */
 
-with dbu_size_cte AS
+with dbu_size_view AS
 (
   SELECT '2X-Small' AS size, 4 AS dbu_per_h
   UNION ALL
@@ -80,7 +80,7 @@ with dbu_size_cte AS
   UNION ALL
   SELECT '4X-Large', 528
 ),
- 
+
 system_warehouse_cte as (
 SELECT
     we.warehouse_id AS warehouse_id,
@@ -96,17 +96,25 @@ WHERE
         'SCALING_UP', 'SCALED_UP', 'SCALING_DOWN', 'SCALED_DOWN'
     )
 )
- 
-select a. run_timestamp, a.benchmark_catalog, a.benchmark_schema,
-  a.warehouse_id, a.id, a.warehouse_name, a.warehouse_size,
-  a.duration/(1000*60*60) as duration_hours,
+
+select a. run_timestamp, a.benchmark_catalog, a.benchmark_schema, 
+  a.warehouse_id, a.id, a.warehouse_name, a.warehouse_size, a.warehouse_type, a.duration as duration_ms,
+  a.duration/(1000*60*60) as duration_hours, 
+    CASE
+    WHEN a.warehouse_type LIKE '%serverless%' THEN 0.7
+    WHEN a.warehouse_type LIKE '%pro%' THEN 0.55
+    WHEN a.warehouse_type LIKE '%classic%' THEN 0.22
+  END AS unit_cost,
   b.cluster_count, c.dbu_per_h,
-  a.duration/(1000*60*60) * cluster_count * c.dbu_per_h as dollar_cost
+  duration_hours * cluster_count * c.dbu_per_h as dbus,
+  dbus * unit_cost as dollar_dbus
 from (
-    select *, split_part(warehouse_name, " ", -1) as warehouse_size from <metimur_metrics_table_name>
-    ) a
+  select *, split_part(warehouse_name, " ", -1) as warehouse_size,
+      split_part(warehouse_name, " ", -2) as warehouse_type
+  from <metimur_metrics_table_name>
+  ) a
 join system_warehouse_cte b
-join dbu_size_cte c
+join dbu_size_view c
 on  a.warehouse_id = b.warehouse_id
 and a.warehouse_size = c.size
 and from_unixtime(a.query_start_time_ms/1000) between b.event_time and b.next_event_time
