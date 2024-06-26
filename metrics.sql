@@ -43,7 +43,7 @@ SELECT
     WHEN sku_name LIKE '%PRO%' THEN 0.55
     WHEN sku_name LIKE '%CLASSIC%' THEN 0.22
   END AS unit_cost,
-  0.11 AS discount,
+  0.00 AS discount,
   usage_quantity * unit_cost * (1-discount) AS total_dollar_amount
 FROM
   system.billing.usage
