@@ -51,7 +51,7 @@ WHERE
   sku_name LIKE '%SQL%'
   AND usage_metadata.warehouse_id IN (
     SELECT DISTINCT warehouse_id
-    FROM _metimur_metrics1_anhhoang_chu_databricks_com
+    FROM <metimur_metrics_table_name>
   );
 
     
@@ -60,7 +60,7 @@ Sample query to extract cost per query, require permission to databricks systems
 https://docs.databricks.com/en/admin/system-tables/index.html
 */
 
-with dbu_size_view AS
+with dbu_size_cte AS
 (
   SELECT '2X-Small' AS size, 4 AS dbu_per_h
   UNION ALL
@@ -102,9 +102,11 @@ select a. run_timestamp, a.benchmark_catalog, a.benchmark_schema,
   a.duration/(1000*60*60) as duration_hours,
   b.cluster_count, c.dbu_per_h,
   a.duration/(1000*60*60) * cluster_count * c.dbu_per_h as dollar_cost
-from (select *, split_part(warehouse_name, " ", -1) as warehouse_size from <metimur_metrics_table>) a
+from (
+    select *, split_part(warehouse_name, " ", -1) as warehouse_size from <metimur_metrics_table_name>
+    ) a
 join system_warehouse_cte b
-join dbu_size_view c
+join dbu_size_cte c
 on  a.warehouse_id = b.warehouse_id
 and a.warehouse_size = c.size
 and from_unixtime(a.query_start_time_ms/1000) between b.event_time and b.next_event_time
