@@ -1,39 +1,44 @@
 {
     "datasets": [
         {
-            "name": "c8966ccb",
+            "name": "2643bc3d",
             "displayName": "last_run_timestamp",
             "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
         },
         {
-            "name": "2b37989d",
-            "displayName": "average_duration",
-            "query": "select\n    run_timestamp,\n    id,\n    query_text,\n    warehouse_name,\n    avg(duration) as average_duration\nfrom\n(\n    SELECT \n        duration/1000 as duration,\n        metrics.planning_time_ms/1000 as query_planning_time,\n        metrics.execution_time_ms/1000 as query_execution_time,\n        metrics.compilation_time_ms/1000 as query_compliation_time,\n        * EXCEPT(duration, metrics)\n    FROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n)\ngroup by 1, 2, 3, 4"
+            "name": "4f9fc4c0",
+            "displayName": "query_metrics",
+            "query": "SELECT \n    run_timestamp,\n    warehouse_id,\n    query_start_time_ms, query_end_time_ms,\n    id,\n    query_text,\n    concurrency, \n    benchmark_catalog, \n    benchmark_schema,   \n    warehouse_name,\n    duration,\n    duration/1000 as duration_secs,\n    metrics.planning_time_ms/1000 as query_planning_time_secs,\n    metrics.execution_time_ms/1000 as query_execution_time_secs,\n    metrics.compilation_time_ms/1000 as query_compliation_time_secs,\n    metrics.result_from_cache as result_from_cache,\n    metrics.rows_produced_count as rows_produced_count,\n    metrics.read_files_count as read_files_count,\n    metrics.read_partitions_count as read_partitions_count,\n    metrics.pruned_bytes as pruned_bytes,\n    metrics.pruned_files_count as pruned_files_count,\n    metrics.spill_to_disk_bytes as spill_to_disk_bytes,\n    metrics.rows_read_count as rows_read_count\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME;\n"
         },
         {
-            "name": "c9e5e0b6",
+            "name": "136ee3ee",
             "displayName": "metimur_metrics",
-            "query": "SELECT \n    duration/1000 as duration,\n    metrics.planning_time_ms/1000 as query_planning_time,\n    metrics.execution_time_ms/1000 as query_execution_time,\n    metrics.compilation_time_ms/1000 as query_compliation_time,\n    * EXCEPT(duration, metrics)\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
+            "query": "SELECT \n    id, query_text, run_timestamp, \n    warehouse_name,\n    metrics.result_from_cache as result_from_cache,\n    avg(duration)/1000 as avg_duration_secs,\n    avg(metrics.planning_time_ms)/1000 as avg_query_planning_time_secs,\n    avg(metrics.execution_time_ms)/1000 as avg_query_execution_time_secs,\n    avg(metrics.compilation_time_ms)/1000 as avg_query_compliation_time_secs\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\nGROUP BY ALL\norder by id"
         },
         {
-            "name": "df0b72e4",
+            "name": "8b78e22d",
             "displayName": "benchmark_config",
             "query": "select distinct run_timestamp, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
+        },
+        {
+            "name": "7a393fbf",
+            "displayName": "query_cost",
+            "query": "with dbu_size_view AS\n(\n  SELECT '2X-Small' AS size, 4 AS dbu_per_h\n  UNION ALL\n  SELECT 'X-Small', 6\n  UNION ALL\n  SELECT 'Small', 12\n  UNION ALL\n  SELECT 'Medium', 24\n  UNION ALL\n  SELECT 'Large', 40\n  UNION ALL\n  SELECT 'X-Large', 80\n  UNION ALL\n  SELECT '2X-Large', 144\n  UNION ALL\n  SELECT '3X-Large', 272\n  UNION ALL\n  SELECT '4X-Large', 528\n),\n\nsystem_warehouse_cte as (\nSELECT\n    we.warehouse_id AS warehouse_id,\n    we.event_type AS event,\n    we.event_time AS event_time,\n    we.cluster_count AS cluster_count,\n    lead(event_time) over (PARTITION BY warehouse_id ORDER BY event_time) AS next_event_time\nFROM\n    system.compute.warehouse_events AS we\nWHERE\n    we.event_type IN (\n        'STARTING', 'RUNNING', 'STOPPING', 'STOPPED',\n        'SCALING_UP', 'SCALED_UP', 'SCALING_DOWN', 'SCALED_DOWN'\n    )\n    -- and warehouse_id = '8097a27ebcc78d0b'\n)\n\nselect a. run_timestamp, a.benchmark_catalog, a.benchmark_schema, \n  a.warehouse_id, a.id, a.warehouse_name, a.warehouse_size, a.warehouse_type, a.duration as duration_ms,\n  a.duration/(1000*60*60) as duration_hours, \n    CASE\n    WHEN a.warehouse_type LIKE '%serverless%' THEN 0.7\n    WHEN a.warehouse_type LIKE '%pro%' THEN 0.55\n    WHEN a.warehouse_type LIKE '%classic%' THEN 0.22\n  END AS unit_cost,\n  b.cluster_count, c.dbu_per_h,\n  duration_hours * cluster_count * c.dbu_per_h as dbus,\n  dbus * unit_cost as dollar_dbus\nfrom (\n  select *, split_part(warehouse_name, \" \", -1) as warehouse_size,\n      split_part(warehouse_name, \" \", -2) as warehouse_type\n  from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n  ) a\njoin system_warehouse_cte b\njoin dbu_size_view c\non  a.warehouse_id = b.warehouse_id\nand a.warehouse_size = c.size\nand from_unixtime(a.query_start_time_ms/1000) between b.event_time and b.next_event_time\n;\n"
         }
     ],
     "pages": [
         {
-            "name": "ed1984a3",
+            "name": "1f0fcb19",
             "displayName": "New Page",
             "layout": [
                 {
                     "widget": {
-                        "name": "1a0108c2",
+                        "name": "a5ece89f",
                         "queries": [
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_warehouse_name",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc1e13cdb76b03723505ec77_warehouse_name",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
                                         {
                                             "name": "warehouse_name",
@@ -48,9 +53,9 @@
                                 }
                             },
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc357991a6c8e8e3a58f3cfb46a_warehouse_name",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc29176cafc9688918367852_warehouse_name",
                                 "query": {
-                                    "datasetName": "2b37989d",
+                                    "datasetName": "7a393fbf",
                                     "fields": [
                                         {
                                             "name": "warehouse_name",
@@ -73,12 +78,12 @@
                                     {
                                         "fieldName": "warehouse_name",
                                         "displayName": "warehouse_name",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_warehouse_name"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc1e13cdb76b03723505ec77_warehouse_name"
                                     },
                                     {
                                         "fieldName": "warehouse_name",
                                         "displayName": "warehouse_name",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc357991a6c8e8e3a58f3cfb46a_warehouse_name"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc29176cafc9688918367852_warehouse_name"
                                     }
                                 ]
                             },
@@ -89,24 +94,24 @@
                         }
                     },
                     "position": {
-                        "x": 1,
+                        "x": 2,
                         "y": 2,
-                        "width": 1,
+                        "width": 2,
                         "height": 2
                     }
                 },
                 {
                     "widget": {
-                        "name": "cfa1dd79",
+                        "name": "e3c1d418",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
                                         {
-                                            "name": "max(duration)",
-                                            "expression": "MAX(`duration`)"
+                                            "name": "max(duration_secs)",
+                                            "expression": "MAX(`duration_secs`)"
                                         }
                                     ],
                                     "disaggregated": false
@@ -118,31 +123,31 @@
                             "widgetType": "counter",
                             "encodings": {
                                 "value": {
-                                    "fieldName": "max(duration)",
-                                    "displayName": "Maximum duration"
+                                    "fieldName": "max(duration_secs)",
+                                    "displayName": "Maximum duration_secs"
                                 }
                             },
                             "frame": {
                                 "showTitle": true,
-                                "title": "Max Duration (sec)"
+                                "title": "Max Duration (secs)"
                             }
                         }
                     },
                     "position": {
-                        "x": 2,
-                        "y": 4,
+                        "x": 4,
+                        "y": 7,
                         "width": 2,
                         "height": 3
                     }
                 },
                 {
                     "widget": {
-                        "name": "3ffc82fa",
+                        "name": "0a0970c3",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
                                         {
                                             "name": "warehouse_name",
@@ -153,8 +158,8 @@
                                             "expression": "`id`"
                                         },
                                         {
-                                            "name": "avg(duration)",
-                                            "expression": "AVG(`duration`)"
+                                            "name": "avg(duration_secs)",
+                                            "expression": "AVG(`duration_secs`)"
                                         }
                                     ],
                                     "disaggregated": false
@@ -167,26 +172,23 @@
                             "encodings": {
                                 "x": {
                                     "fieldName": "id",
+                                    "axis": {
+                                        "title": "Query id"
+                                    },
                                     "scale": {
                                         "type": "categorical",
                                         "sort": {
-                                            "by": "y-reversed"
+                                            "by": "natural-order"
                                         }
-                                    },
-                                    "axis": {
-                                        "title": "Query id"
                                     },
                                     "displayName": "Query id"
                                 },
                                 "y": {
-                                    "fieldName": "avg(duration)",
+                                    "fieldName": "avg(duration_secs)",
                                     "scale": {
                                         "type": "quantitative"
                                     },
-                                    "axis": {
-                                        "title": "Average Duration"
-                                    },
-                                    "displayName": "Average Duration"
+                                    "displayName": "Average duration_secs"
                                 },
                                 "color": {
                                     "fieldName": "warehouse_name",
@@ -197,36 +199,36 @@
                                         "position": "bottom"
                                     },
                                     "displayName": "warehouse_name"
+                                },
+                                "label": {
+                                    "show": false
                                 }
                             },
                             "frame": {
                                 "showTitle": true,
                                 "title": "Query Duration Sorted"
-                            },
-                            "mark": {
-                                "layout": "group"
                             }
                         }
                     },
                     "position": {
                         "x": 0,
-                        "y": 14,
+                        "y": 10,
                         "width": 6,
                         "height": 8
                     }
                 },
                 {
                     "widget": {
-                        "name": "f7ae04d6",
+                        "name": "f981c189",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
                                         {
-                                            "name": "min(duration)",
-                                            "expression": "MIN(`duration`)"
+                                            "name": "min(duration_secs)",
+                                            "expression": "MIN(`duration_secs`)"
                                         }
                                     ],
                                     "disaggregated": false
@@ -238,71 +240,71 @@
                             "widgetType": "counter",
                             "encodings": {
                                 "value": {
-                                    "fieldName": "min(duration)",
-                                    "displayName": "Minimum duration"
+                                    "fieldName": "min(duration_secs)",
+                                    "displayName": "Minimum duration_secs"
                                 }
                             },
                             "frame": {
                                 "showTitle": true,
-                                "title": "Min Duration (sec)"
-                            }
-                        }
-                    },
-                    "position": {
-                        "x": 4,
-                        "y": 4,
-                        "width": 2,
-                        "height": 3
-                    }
-                },
-                {
-                    "widget": {
-                        "name": "d6bfa240",
-                        "queries": [
-                            {
-                                "name": "main_query",
-                                "query": {
-                                    "datasetName": "c9e5e0b6",
-                                    "fields": [
-                                        {
-                                            "name": "median(duration)",
-                                            "expression": "PERCENTILE(`duration`, 0.5)"
-                                        }
-                                    ],
-                                    "disaggregated": false
-                                }
-                            }
-                        ],
-                        "spec": {
-                            "version": 2,
-                            "widgetType": "counter",
-                            "encodings": {
-                                "value": {
-                                    "fieldName": "median(duration)",
-                                    "displayName": "Median of duration"
-                                }
-                            },
-                            "frame": {
-                                "showTitle": true,
-                                "title": "Median Duration (sec)"
+                                "title": "Min Duration (secs)"
                             }
                         }
                     },
                     "position": {
                         "x": 0,
-                        "y": 4,
+                        "y": 7,
                         "width": 2,
                         "height": 3
                     }
                 },
                 {
                     "widget": {
-                        "name": "5e015645",
+                        "name": "b8660224",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "c8966ccb",
+                                    "datasetName": "4f9fc4c0",
+                                    "fields": [
+                                        {
+                                            "name": "median(duration_secs)",
+                                            "expression": "PERCENTILE(`duration_secs`, 0.5)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "counter",
+                            "encodings": {
+                                "value": {
+                                    "fieldName": "median(duration_secs)",
+                                    "displayName": "Median of duration_secs"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Median Duration (secs)"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 2,
+                        "y": 7,
+                        "width": 2,
+                        "height": 3
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "8f46de3c",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "2643bc3d",
                                     "fields": [
                                         {
                                             "name": "last_run_timestamp",
@@ -337,7 +339,7 @@
                 },
                 {
                     "widget": {
-                        "name": "7827e760",
+                        "name": "e5835e93",
                         "textbox_spec": "# Metimur Benchmark Metrics"
                     },
                     "position": {
@@ -349,12 +351,12 @@
                 },
                 {
                     "widget": {
-                        "name": "6cd869fc",
+                        "name": "26638828",
                         "queries": [
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_run_timestamp",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc261185bf392feff988e44f_run_timestamp",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "8b78e22d",
                                     "fields": [
                                         {
                                             "name": "run_timestamp",
@@ -369,9 +371,9 @@
                                 }
                             },
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579f1a6e95f84bba1c832ff3_run_timestamp",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc1e13cdb76b03723505ec77_run_timestamp",
                                 "query": {
-                                    "datasetName": "df0b72e4",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
                                         {
                                             "name": "run_timestamp",
@@ -386,9 +388,9 @@
                                 }
                             },
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc357991a6c8e8e3a58f3cfb46a_run_timestamp",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc29176cafc9688918367852_run_timestamp",
                                 "query": {
-                                    "datasetName": "2b37989d",
+                                    "datasetName": "7a393fbf",
                                     "fields": [
                                         {
                                             "name": "run_timestamp",
@@ -411,17 +413,17 @@
                                     {
                                         "fieldName": "run_timestamp",
                                         "displayName": "run_timestamp",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_run_timestamp"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc261185bf392feff988e44f_run_timestamp"
                                     },
                                     {
                                         "fieldName": "run_timestamp",
                                         "displayName": "run_timestamp",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579f1a6e95f84bba1c832ff3_run_timestamp"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc1e13cdb76b03723505ec77_run_timestamp"
                                     },
                                     {
                                         "fieldName": "run_timestamp",
                                         "displayName": "run_timestamp",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc357991a6c8e8e3a58f3cfb46a_run_timestamp"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc29176cafc9688918367852_run_timestamp"
                                     }
                                 ]
                             },
@@ -434,19 +436,23 @@
                     "position": {
                         "x": 0,
                         "y": 2,
-                        "width": 1,
+                        "width": 2,
                         "height": 2
                     }
                 },
                 {
                     "widget": {
-                        "name": "72814629",
+                        "name": "7c5d75d8",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "df0b72e4",
+                                    "datasetName": "8b78e22d",
                                     "fields": [
+                                        {
+                                            "name": "run_timestamp",
+                                            "expression": "`run_timestamp`"
+                                        },
                                         {
                                             "name": "concurrency",
                                             "expression": "`concurrency`"
@@ -470,6 +476,34 @@
                             "encodings": {
                                 "columns": [
                                     {
+                                        "fieldName": "run_timestamp",
+                                        "dateTimeFormat": "DD/MM/YY HH:mm:ss.SSS",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "datetime",
+                                        "displayAs": "datetime",
+                                        "visible": true,
+                                        "order": 100000,
+                                        "title": "run_timestamp",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "run_timestamp"
+                                    },
+                                    {
                                         "fieldName": "concurrency",
                                         "numberFormat": "0",
                                         "booleanValues": [
@@ -490,17 +524,11 @@
                                         "order": 100001,
                                         "title": "concurrency",
                                         "allowSearch": false,
-                                        "alignContent": "center",
+                                        "alignContent": "right",
                                         "allowHTML": false,
                                         "highlightLinks": false,
                                         "useMonospaceFont": false,
                                         "preserveWhitespace": false,
-                                        "cellFormat": {
-                                            "default": {
-                                                "foregroundColor": null
-                                            },
-                                            "rules": []
-                                        },
                                         "displayName": "concurrency"
                                     },
                                     {
@@ -523,7 +551,7 @@
                                         "order": 100002,
                                         "title": "benchmark_catalog",
                                         "allowSearch": false,
-                                        "alignContent": "center",
+                                        "alignContent": "left",
                                         "allowHTML": false,
                                         "highlightLinks": false,
                                         "useMonospaceFont": false,
@@ -550,7 +578,7 @@
                                         "order": 100003,
                                         "title": "benchmark_schema",
                                         "allowSearch": false,
-                                        "alignContent": "center",
+                                        "alignContent": "left",
                                         "allowHTML": false,
                                         "highlightLinks": false,
                                         "useMonospaceFont": false,
@@ -559,36 +587,9 @@
                                     }
                                 ]
                             },
-                            "invisibleColumns": [
-                                {
-                                    "dateTimeFormat": "YYYY-MM-DD HH:mm:ss.SSS",
-                                    "booleanValues": [
-                                        "false",
-                                        "true"
-                                    ],
-                                    "imageUrlTemplate": "{{ @ }}",
-                                    "imageTitleTemplate": "{{ @ }}",
-                                    "imageWidth": "",
-                                    "imageHeight": "",
-                                    "linkUrlTemplate": "{{ @ }}",
-                                    "linkTextTemplate": "{{ @ }}",
-                                    "linkTitleTemplate": "{{ @ }}",
-                                    "linkOpenInNewTab": true,
-                                    "name": "run_timestamp",
-                                    "type": "datetime",
-                                    "displayAs": "datetime",
-                                    "order": 100000,
-                                    "title": "run_timestamp",
-                                    "allowSearch": false,
-                                    "alignContent": "right",
-                                    "allowHTML": false,
-                                    "highlightLinks": false,
-                                    "useMonospaceFont": false,
-                                    "preserveWhitespace": false
-                                }
-                            ],
+                            "invisibleColumns": [],
                             "allowHTMLByDefault": false,
-                            "itemsPerPage": 5,
+                            "itemsPerPage": 25,
                             "paginationSize": "default",
                             "condensed": true,
                             "withRowNumber": false,
@@ -599,36 +600,36 @@
                         }
                     },
                     "position": {
-                        "x": 2,
-                        "y": 2,
-                        "width": 3,
-                        "height": 2
+                        "x": 0,
+                        "y": 4,
+                        "width": 6,
+                        "height": 3
                     }
                 },
                 {
                     "widget": {
-                        "name": "9c4cbca5",
+                        "name": "c7eb147a",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
-                                        {
-                                            "name": "avg(query_compliation_time)",
-                                            "expression": "AVG(`query_compliation_time`)"
-                                        },
-                                        {
-                                            "name": "avg(query_execution_time)",
-                                            "expression": "AVG(`query_execution_time`)"
-                                        },
-                                        {
-                                            "name": "avg(query_planning_time)",
-                                            "expression": "AVG(`query_planning_time`)"
-                                        },
                                         {
                                             "name": "id",
                                             "expression": "`id`"
+                                        },
+                                        {
+                                            "name": "avg(query_planning_time_secs)",
+                                            "expression": "AVG(`query_planning_time_secs`)"
+                                        },
+                                        {
+                                            "name": "avg(query_compliation_time_secs)",
+                                            "expression": "AVG(`query_compliation_time_secs`)"
+                                        },
+                                        {
+                                            "name": "avg(query_execution_time_secs)",
+                                            "expression": "AVG(`query_execution_time_secs`)"
                                         }
                                     ],
                                     "disaggregated": false
@@ -658,16 +659,16 @@
                                     },
                                     "fields": [
                                         {
-                                            "fieldName": "avg(query_planning_time)",
-                                            "displayName": "Average query_planning_time"
+                                            "fieldName": "avg(query_planning_time_secs)",
+                                            "displayName": "Average query_planning_time_secs"
                                         },
                                         {
-                                            "fieldName": "avg(query_compliation_time)",
-                                            "displayName": "Average query_compliation_time"
+                                            "fieldName": "avg(query_compliation_time_secs)",
+                                            "displayName": "Average query_compliation_time_secs"
                                         },
                                         {
-                                            "fieldName": "avg(query_execution_time)",
-                                            "displayName": "Average query_execution_time"
+                                            "fieldName": "avg(query_execution_time_secs)",
+                                            "displayName": "Average query_execution_time_secs"
                                         }
                                     ],
                                     "axis": {
@@ -691,19 +692,19 @@
                     },
                     "position": {
                         "x": 0,
-                        "y": 35,
+                        "y": 55,
                         "width": 6,
                         "height": 8
                     }
                 },
                 {
                     "widget": {
-                        "name": "faa1f503",
+                        "name": "bfb38fff",
                         "queries": [
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_id",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc221226af8577857126be45_id",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "136ee3ee",
                                     "fields": [
                                         {
                                             "name": "id",
@@ -718,9 +719,26 @@
                                 }
                             },
                             {
-                                "name": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc357991a6c8e8e3a58f3cfb46a_id",
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc1e13cdb76b03723505ec77_id",
                                 "query": {
-                                    "datasetName": "2b37989d",
+                                    "datasetName": "4f9fc4c0",
+                                    "fields": [
+                                        {
+                                            "name": "id",
+                                            "expression": "`id`"
+                                        },
+                                        {
+                                            "name": "id_associativity",
+                                            "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            },
+                            {
+                                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc29176cafc9688918367852_id",
+                                "query": {
+                                    "datasetName": "7a393fbf",
                                     "fields": [
                                         {
                                             "name": "id",
@@ -743,12 +761,17 @@
                                     {
                                         "fieldName": "id",
                                         "displayName": "id",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc3579c1b31be6e202121f8d765_id"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc221226af8577857126be45_id"
                                     },
                                     {
                                         "fieldName": "id",
                                         "displayName": "id",
-                                        "queryName": "dashboards/01ef0c2c10a417dfbe1382d6ec199fbc/datasets/01ef0cc357991a6c8e8e3a58f3cfb46a_id"
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc1e13cdb76b03723505ec77_id"
+                                    },
+                                    {
+                                        "fieldName": "id",
+                                        "displayName": "id",
+                                        "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef3808cc29176cafc9688918367852_id"
                                     }
                                 ]
                             },
@@ -759,32 +782,852 @@
                         }
                     },
                     "position": {
-                        "x": 5,
+                        "x": 4,
                         "y": 2,
-                        "width": 1,
+                        "width": 2,
                         "height": 2
                     }
                 },
                 {
                     "widget": {
-                        "name": "e365ae81",
+                        "name": "64772cbb",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "c9e5e0b6",
+                                    "datasetName": "4f9fc4c0",
                                     "fields": [
                                         {
-                                            "name": "bin(duration, binWidth=0.1)",
-                                            "expression": "BIN_FLOOR(`duration`, 0.1)"
-                                        },
-                                        {
-                                            "name": "count(*)",
-                                            "expression": "COUNT(`*`)"
+                                            "name": "avg(duration_secs)",
+                                            "expression": "AVG(`duration_secs`)"
                                         },
                                         {
                                             "name": "warehouse_name",
                                             "expression": "`warehouse_name`"
+                                        },
+                                        {
+                                            "name": "id",
+                                            "expression": "`id`"
+                                        }
+                                    ],
+                                    "disaggregated": false,
+                                    "orders": [
+                                        {
+                                            "direction": "ASC",
+                                            "expression": "`id`"
+                                        },
+                                        {
+                                            "direction": "ASC",
+                                            "expression": "`warehouse_name`"
+                                        }
+                                    ]
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 3,
+                            "widgetType": "pivot",
+                            "encodings": {
+                                "rows": [
+                                    {
+                                        "fieldName": "id",
+                                        "displayName": "id"
+                                    }
+                                ],
+                                "columns": [
+                                    {
+                                        "fieldName": "warehouse_name",
+                                        "displayName": "warehouse_name"
+                                    }
+                                ],
+                                "cell": {
+                                    "type": "multi-cell",
+                                    "fields": [
+                                        {
+                                            "fieldName": "avg(duration_secs)",
+                                            "cellType": "text",
+                                            "displayName": "Average duration_secs"
+                                        }
+                                    ]
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Average Duration (Secs) Per Query",
+                                "showDescription": false,
+                                "description": ""
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 42,
+                        "width": 3,
+                        "height": 13
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "1d5228ef",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "4f9fc4c0",
+                                    "fields": [
+                                        {
+                                            "name": "run_timestamp",
+                                            "expression": "`run_timestamp`"
+                                        },
+                                        {
+                                            "name": "id",
+                                            "expression": "`id`"
+                                        },
+                                        {
+                                            "name": "warehouse_name",
+                                            "expression": "`warehouse_name`"
+                                        },
+                                        {
+                                            "name": "rows_produced_count",
+                                            "expression": "`rows_produced_count`"
+                                        },
+                                        {
+                                            "name": "duration_secs",
+                                            "expression": "`duration_secs`"
+                                        },
+                                        {
+                                            "name": "concurrency",
+                                            "expression": "`concurrency`"
+                                        },
+                                        {
+                                            "name": "pruned_bytes",
+                                            "expression": "`pruned_bytes`"
+                                        },
+                                        {
+                                            "name": "pruned_files_count",
+                                            "expression": "`pruned_files_count`"
+                                        },
+                                        {
+                                            "name": "query_planning_time_secs",
+                                            "expression": "`query_planning_time_secs`"
+                                        },
+                                        {
+                                            "name": "query_execution_time_secs",
+                                            "expression": "`query_execution_time_secs`"
+                                        },
+                                        {
+                                            "name": "query_compliation_time_secs",
+                                            "expression": "`query_compliation_time_secs`"
+                                        },
+                                        {
+                                            "name": "result_from_cache",
+                                            "expression": "`result_from_cache`"
+                                        },
+                                        {
+                                            "name": "read_files_count",
+                                            "expression": "`read_files_count`"
+                                        },
+                                        {
+                                            "name": "read_partitions_count",
+                                            "expression": "`read_partitions_count`"
+                                        },
+                                        {
+                                            "name": "spill_to_disk_bytes",
+                                            "expression": "`spill_to_disk_bytes`"
+                                        },
+                                        {
+                                            "name": "rows_read_count",
+                                            "expression": "`rows_read_count`"
+                                        },
+                                        {
+                                            "name": "benchmark_catalog",
+                                            "expression": "`benchmark_catalog`"
+                                        },
+                                        {
+                                            "name": "benchmark_schema",
+                                            "expression": "`benchmark_schema`"
+                                        }
+                                    ],
+                                    "disaggregated": true
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 1,
+                            "widgetType": "table",
+                            "encodings": {
+                                "columns": [
+                                    {
+                                        "fieldName": "run_timestamp",
+                                        "dateTimeFormat": "DD/MM/YY HH:mm:ss.SSS",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "datetime",
+                                        "displayAs": "datetime",
+                                        "visible": true,
+                                        "order": 0,
+                                        "title": "run_timestamp",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "run_timestamp"
+                                    },
+                                    {
+                                        "fieldName": "id",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 1,
+                                        "title": "id",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "id"
+                                    },
+                                    {
+                                        "fieldName": "warehouse_name",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 3,
+                                        "title": "warehouse_name",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "warehouse_name"
+                                    },
+                                    {
+                                        "fieldName": "rows_produced_count",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 4,
+                                        "title": "rows_produced_count",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "rows_produced_count"
+                                    },
+                                    {
+                                        "fieldName": "duration_secs",
+                                        "numberFormat": "0.00",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 5,
+                                        "title": "duration_secs",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "duration_secs"
+                                    },
+                                    {
+                                        "fieldName": "concurrency",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 14,
+                                        "title": "concurrency",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "concurrency"
+                                    },
+                                    {
+                                        "fieldName": "pruned_bytes",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 15,
+                                        "title": "pruned_bytes",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "pruned_bytes"
+                                    },
+                                    {
+                                        "fieldName": "pruned_files_count",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 16,
+                                        "title": "pruned_files_count",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "pruned_files_count"
+                                    },
+                                    {
+                                        "fieldName": "query_planning_time_secs",
+                                        "numberFormat": "0.00",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 17,
+                                        "title": "query_planning_time_secs",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "query_planning_time_secs"
+                                    },
+                                    {
+                                        "fieldName": "query_execution_time_secs",
+                                        "numberFormat": "0.00",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 18,
+                                        "title": "query_execution_time_secs",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "query_execution_time_secs"
+                                    },
+                                    {
+                                        "fieldName": "query_compliation_time_secs",
+                                        "numberFormat": "0.00",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 19,
+                                        "title": "query_compliation_time_secs",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "query_compliation_time_secs"
+                                    },
+                                    {
+                                        "fieldName": "result_from_cache",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "boolean",
+                                        "displayAs": "boolean",
+                                        "visible": true,
+                                        "order": 20,
+                                        "title": "result_from_cache",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "result_from_cache"
+                                    },
+                                    {
+                                        "fieldName": "read_files_count",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 21,
+                                        "title": "read_files_count",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "read_files_count"
+                                    },
+                                    {
+                                        "fieldName": "read_partitions_count",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 22,
+                                        "title": "read_partitions_count",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "read_partitions_count"
+                                    },
+                                    {
+                                        "fieldName": "spill_to_disk_bytes",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 23,
+                                        "title": "spill_to_disk_bytes",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "spill_to_disk_bytes"
+                                    },
+                                    {
+                                        "fieldName": "rows_read_count",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 24,
+                                        "title": "rows_read_count",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "rows_read_count"
+                                    },
+                                    {
+                                        "fieldName": "benchmark_catalog",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 27,
+                                        "title": "benchmark_catalog",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "benchmark_catalog"
+                                    },
+                                    {
+                                        "fieldName": "benchmark_schema",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 28,
+                                        "title": "benchmark_schema",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "benchmark_schema"
+                                    }
+                                ]
+                            },
+                            "invisibleColumns": [
+                                {
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "query_text",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 2,
+                                    "title": "query_text",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "warehouse_id",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 25,
+                                    "title": "warehouse_id",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "numberFormat": "0",
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "duration",
+                                    "type": "integer",
+                                    "displayAs": "number",
+                                    "order": 26,
+                                    "title": "duration",
+                                    "allowSearch": false,
+                                    "alignContent": "right",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "numberFormat": "0",
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "query_start_time_ms",
+                                    "type": "integer",
+                                    "displayAs": "number",
+                                    "order": 100002,
+                                    "title": "query_start_time_ms",
+                                    "allowSearch": false,
+                                    "alignContent": "right",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "numberFormat": "0",
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "query_end_time_ms",
+                                    "type": "integer",
+                                    "displayAs": "number",
+                                    "order": 100003,
+                                    "title": "query_end_time_ms",
+                                    "allowSearch": false,
+                                    "alignContent": "right",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                }
+                            ],
+                            "allowHTMLByDefault": false,
+                            "itemsPerPage": 25,
+                            "paginationSize": "default",
+                            "condensed": true,
+                            "withRowNumber": false,
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Individual Query Metrics Detail",
+                                "showDescription": false,
+                                "description": ""
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 24,
+                        "width": 6,
+                        "height": 9
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "4182c192",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "4f9fc4c0",
+                                    "fields": [
+                                        {
+                                            "name": "warehouse_name",
+                                            "expression": "`warehouse_name`"
+                                        },
+                                        {
+                                            "name": "bin(duration_secs, binWidth=1)",
+                                            "expression": "BIN_FLOOR(`duration_secs`, 1)"
+                                        },
+                                        {
+                                            "name": "count(*)",
+                                            "expression": "COUNT(`*`)"
                                         }
                                     ],
                                     "disaggregated": false
@@ -796,24 +1639,18 @@
                             "widgetType": "histogram",
                             "encodings": {
                                 "x": {
-                                    "fieldName": "bin(duration, binWidth=0.1)",
+                                    "fieldName": "bin(duration_secs, binWidth=1)",
                                     "scale": {
                                         "type": "quantitative"
                                     },
-                                    "axis": {
-                                        "title": "Duration"
-                                    },
-                                    "displayName": "Duration"
+                                    "displayName": "duration_secs"
                                 },
                                 "y": {
                                     "fieldName": "count(*)",
                                     "scale": {
                                         "type": "quantitative"
                                     },
-                                    "axis": {
-                                        "title": "Query Count"
-                                    },
-                                    "displayName": "Query Count"
+                                    "displayName": "Count of Records"
                                 },
                                 "color": {
                                     "fieldName": "warehouse_name",
@@ -837,35 +1674,137 @@
                     },
                     "position": {
                         "x": 0,
-                        "y": 7,
+                        "y": 18,
                         "width": 6,
-                        "height": 7
+                        "height": 6
                     }
                 },
                 {
                     "widget": {
-                        "name": "62b84b31",
+                        "name": "8d1c6ec4",
                         "queries": [
                             {
                                 "name": "main_query",
                                 "query": {
-                                    "datasetName": "2b37989d",
+                                    "datasetName": "7a393fbf",
                                     "fields": [
+                                        {
+                                            "name": "avg(dollar_dbus)",
+                                            "expression": "AVG(`dollar_dbus`)"
+                                        },
+                                        {
+                                            "name": "warehouse_name",
+                                            "expression": "`warehouse_name`"
+                                        },
+                                        {
+                                            "name": "id",
+                                            "expression": "`id`"
+                                        }
+                                    ],
+                                    "disaggregated": false,
+                                    "orders": [
+                                        {
+                                            "direction": "ASC",
+                                            "expression": "`id`"
+                                        },
+                                        {
+                                            "direction": "ASC",
+                                            "expression": "`warehouse_name`"
+                                        }
+                                    ]
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 3,
+                            "widgetType": "pivot",
+                            "encodings": {
+                                "rows": [
+                                    {
+                                        "fieldName": "id",
+                                        "displayName": "id"
+                                    }
+                                ],
+                                "columns": [
+                                    {
+                                        "fieldName": "warehouse_name",
+                                        "displayName": "warehouse_name"
+                                    }
+                                ],
+                                "cell": {
+                                    "type": "multi-cell",
+                                    "fields": [
+                                        {
+                                            "fieldName": "avg(dollar_dbus)",
+                                            "cellType": "text",
+                                            "displayName": "Average dollar_dbus"
+                                        }
+                                    ]
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Average Dollar DBU Per Query",
+                                "showDescription": true,
+                                "description": "This view is based on the system.compute.warehouse_events table. Data updates may be delayed; refresh after 5 minutes."
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 3,
+                        "y": 42,
+                        "width": 3,
+                        "height": 13
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "bcdad97a",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "7a393fbf",
+                                    "fields": [
+                                        {
+                                            "name": "run_timestamp",
+                                            "expression": "`run_timestamp`"
+                                        },
                                         {
                                             "name": "id",
                                             "expression": "`id`"
                                         },
                                         {
-                                            "name": "query_text",
-                                            "expression": "`query_text`"
-                                        },
-                                        {
-                                            "name": "average_duration",
-                                            "expression": "`average_duration`"
-                                        },
-                                        {
                                             "name": "warehouse_name",
                                             "expression": "`warehouse_name`"
+                                        },
+                                        {
+                                            "name": "warehouse_id",
+                                            "expression": "`warehouse_id`"
+                                        },
+                                        {
+                                            "name": "duration_hours",
+                                            "expression": "`duration_hours`"
+                                        },
+                                        {
+                                            "name": "unit_cost",
+                                            "expression": "`unit_cost`"
+                                        },
+                                        {
+                                            "name": "cluster_count",
+                                            "expression": "`cluster_count`"
+                                        },
+                                        {
+                                            "name": "dbu_per_h",
+                                            "expression": "`dbu_per_h`"
+                                        },
+                                        {
+                                            "name": "dbus",
+                                            "expression": "`dbus`"
+                                        },
+                                        {
+                                            "name": "dollar_dbus",
+                                            "expression": "`dollar_dbus`"
                                         }
                                     ],
                                     "disaggregated": true
@@ -877,6 +1816,34 @@
                             "widgetType": "table",
                             "encodings": {
                                 "columns": [
+                                    {
+                                        "fieldName": "run_timestamp",
+                                        "dateTimeFormat": "DD/MM/YY HH:mm:ss.SSS",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "datetime",
+                                        "displayAs": "datetime",
+                                        "visible": true,
+                                        "order": 0,
+                                        "title": "run_timestamp",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "run_timestamp"
+                                    },
                                     {
                                         "fieldName": "id",
                                         "booleanValues": [
@@ -894,7 +1861,7 @@
                                         "type": "string",
                                         "displayAs": "string",
                                         "visible": true,
-                                        "order": 0,
+                                        "order": 1,
                                         "title": "id",
                                         "allowSearch": false,
                                         "alignContent": "left",
@@ -903,61 +1870,6 @@
                                         "useMonospaceFont": false,
                                         "preserveWhitespace": false,
                                         "displayName": "id"
-                                    },
-                                    {
-                                        "fieldName": "query_text",
-                                        "booleanValues": [
-                                            "false",
-                                            "true"
-                                        ],
-                                        "imageUrlTemplate": "{{ @ }}",
-                                        "imageTitleTemplate": "{{ @ }}",
-                                        "imageWidth": "",
-                                        "imageHeight": "",
-                                        "linkUrlTemplate": "{{ @ }}",
-                                        "linkTextTemplate": "{{ @ }}",
-                                        "linkTitleTemplate": "{{ @ }}",
-                                        "linkOpenInNewTab": true,
-                                        "type": "string",
-                                        "displayAs": "string",
-                                        "visible": true,
-                                        "order": 1,
-                                        "title": "query_text",
-                                        "allowSearch": false,
-                                        "alignContent": "left",
-                                        "allowHTML": false,
-                                        "highlightLinks": false,
-                                        "useMonospaceFont": false,
-                                        "preserveWhitespace": false,
-                                        "displayName": "query_text"
-                                    },
-                                    {
-                                        "fieldName": "average_duration",
-                                        "numberFormat": "0.00",
-                                        "booleanValues": [
-                                            "false",
-                                            "true"
-                                        ],
-                                        "imageUrlTemplate": "{{ @ }}",
-                                        "imageTitleTemplate": "{{ @ }}",
-                                        "imageWidth": "",
-                                        "imageHeight": "",
-                                        "linkUrlTemplate": "{{ @ }}",
-                                        "linkTextTemplate": "{{ @ }}",
-                                        "linkTitleTemplate": "{{ @ }}",
-                                        "linkOpenInNewTab": true,
-                                        "type": "float",
-                                        "displayAs": "number",
-                                        "visible": true,
-                                        "order": 2,
-                                        "title": "average_duration",
-                                        "allowSearch": false,
-                                        "alignContent": "center",
-                                        "allowHTML": false,
-                                        "highlightLinks": false,
-                                        "useMonospaceFont": false,
-                                        "preserveWhitespace": false,
-                                        "displayName": "average_duration"
                                     },
                                     {
                                         "fieldName": "warehouse_name",
@@ -976,21 +1888,214 @@
                                         "type": "string",
                                         "displayAs": "string",
                                         "visible": true,
-                                        "order": 3,
+                                        "order": 2,
                                         "title": "warehouse_name",
                                         "allowSearch": false,
-                                        "alignContent": "center",
+                                        "alignContent": "left",
                                         "allowHTML": false,
                                         "highlightLinks": false,
                                         "useMonospaceFont": false,
                                         "preserveWhitespace": false,
                                         "displayName": "warehouse_name"
+                                    },
+                                    {
+                                        "fieldName": "warehouse_id",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 3,
+                                        "title": "warehouse_id",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "warehouse_id"
+                                    },
+                                    {
+                                        "fieldName": "duration_hours",
+                                        "numberFormat": "0.0000",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 9,
+                                        "title": "duration_hours",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "duration_hours"
+                                    },
+                                    {
+                                        "fieldName": "unit_cost",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "decimal",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 10,
+                                        "title": "unit_cost",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "unit_cost"
+                                    },
+                                    {
+                                        "fieldName": "cluster_count",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 11,
+                                        "title": "cluster_count",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "cluster_count"
+                                    },
+                                    {
+                                        "fieldName": "dbu_per_h",
+                                        "numberFormat": "0",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "integer",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 12,
+                                        "title": "dbu_per_h",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "dbu_per_h"
+                                    },
+                                    {
+                                        "fieldName": "dbus",
+                                        "numberFormat": "0.0000",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 13,
+                                        "title": "dbus",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "dbus"
+                                    },
+                                    {
+                                        "fieldName": "dollar_dbus",
+                                        "numberFormat": "0.0000",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 14,
+                                        "title": "dollar_dbus",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "dollar_dbus"
                                     }
                                 ]
                             },
                             "invisibleColumns": [
                                 {
-                                    "dateTimeFormat": "YYYY-MM-DD HH:mm:ss.SSS",
                                     "booleanValues": [
                                         "false",
                                         "true"
@@ -1003,11 +2108,112 @@
                                     "linkTextTemplate": "{{ @ }}",
                                     "linkTitleTemplate": "{{ @ }}",
                                     "linkOpenInNewTab": true,
-                                    "name": "run_timestamp",
-                                    "type": "datetime",
-                                    "displayAs": "datetime",
-                                    "order": 100000,
-                                    "title": "run_timestamp",
+                                    "name": "benchmark_catalog",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 4,
+                                    "title": "benchmark_catalog",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "benchmark_schema",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 5,
+                                    "title": "benchmark_schema",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "warehouse_size",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 6,
+                                    "title": "warehouse_size",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "warehouse_type",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 7,
+                                    "title": "warehouse_type",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "numberFormat": "0",
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "duration_ms",
+                                    "type": "integer",
+                                    "displayAs": "number",
+                                    "order": 8,
+                                    "title": "duration_ms",
                                     "allowSearch": false,
                                     "alignContent": "right",
                                     "allowHTML": false,
@@ -1017,22 +2223,23 @@
                                 }
                             ],
                             "allowHTMLByDefault": false,
-                            "itemsPerPage": 10,
+                            "itemsPerPage": 25,
                             "paginationSize": "default",
-                            "condensed": false,
+                            "condensed": true,
                             "withRowNumber": false,
                             "frame": {
                                 "showTitle": true,
-                                "title": "Query Details and Warehouse Configuation",
-                                "showDescription": false
+                                "title": "Individual Query Cost",
+                                "showDescription": true,
+                                "description": "This view is based on the system.compute.warehouse_events table. Data updates may be delayed; refresh after 5 minutes."
                             }
                         }
                     },
                     "position": {
                         "x": 0,
-                        "y": 22,
+                        "y": 33,
                         "width": 6,
-                        "height": 13
+                        "height": 9
                     }
                 }
             ]

@@ -301,16 +301,7 @@ elif benchmark_choice == "multiple-warehouses-size":
 
 # COMMAND ----------
 
-metrics_sdf = (
-  spark.createDataFrame(metrics_pdf)
-                  .withColumn("concurrency", lit(concurrency))
-                  .withColumn("benchmark_catalog", lit(catalog_name))
-                  .withColumn("benchmark_schema", lit(schema_name))
-                  .selectExpr("current_timestamp() as run_timestamp", "concurrency", 
-                              "id", "warehouse_name", "benchmark_catalog", "benchmark_schema",
-                              "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema)")
-)
-display(metrics_sdf)
+display(metrics_pdf)
 
 # COMMAND ----------
 
@@ -406,8 +397,21 @@ set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 
 # MAGIC %md
 # MAGIC ## Create a delta table for Lakeview Dashboard
+# MAGIC
+# MAGIC Convert pandas dataframe to spark dataframe and save to lakeview table
 
 # COMMAND ----------
+
+metrics_sdf = (
+  spark.createDataFrame(metrics_pdf)
+                  .withColumn("concurrency", lit(concurrency))
+                  .withColumn("benchmark_catalog", lit(catalog_name))
+                  .withColumn("benchmark_schema", lit(schema_name))
+                  .selectExpr("current_timestamp() as run_timestamp", "concurrency", 
+                              "id", "warehouse_name", "benchmark_catalog", "benchmark_schema",
+                              "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema)")
+)
+display(metrics_sdf)
 
 create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name, overwrite=False)
 
