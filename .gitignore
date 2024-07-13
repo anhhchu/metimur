@@ -12,3 +12,4 @@ venv/
 .bkup
 extras/.env
 .venv/
+quickstarts_local.ipynb

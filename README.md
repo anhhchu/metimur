@@ -24,9 +24,7 @@ Demo Recording: https://www.youtube.com/watch?v=JBlqoay8_3o
     - [Use Case 3: Generate TPC Data](#use-case-3-generate-tpc-data)
         - [Getting Started](#getting-started-2)
         - [Output](#output-2)
-    - [Extras: Use Databricks Execute SQL API](#extras-use-databricks-execute-sql-api)
-        - [Getting Started](#getting-started-3)
-        - [Output](#output-3)
+    - [Benchmark Output: LakeView Metrics Dashboard](#benchmark-output-lakeview-metrics-dashboard)
 - [Limitations](#limitations)
 
 # Requirements
@@ -137,7 +135,7 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 ![workflow](./assets/workflow.png)
 
-2. In **generate_data** task, data are generated in `serverless_benchmark` catalog
+2. In **generate_data** task, data are generated in `serverless_benchmark` catalog and user-specified schema name
 
 ![generate data](./assets/byod.png)
 
@@ -164,94 +162,23 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 1. An automated Workflow job is created with 2 tasks: Generate_Data and Run_Benchmarking
 
-2. In **generate_data** task, TPC data are generated in `serverless_benchmark` catalog. 
+2. In **generate_data** task, TPC data are generated in `serverless_benchmark` catalog and `tpch_{scale_factor}` schema
 
-![generate data](./assets/generate_data.png)
-
-3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
-
-![run tpc benchmarking](./assets/run_benchmarking.png)
+3. In the **run_benchmarking task**, benchmark queries are executed on the generated data similar to Use Case 2
 
 **Note**: To avoid re-generate these industry benchmarks data, after data is generated, all users in the workspace will be able to query the tables and run benchmark queries on them. If the schemas and tables already exist, the Generate Data task will be skipped
 
-![workflow_1_task](./assets/workflow_1_task.png)
+## Benchmark Output: LakeView Metrics Dashboard
 
-## Extras: Use Databricks Execute SQL API
+For use cases 1 to 3, once the benchmark is finished, the metrics dataframe will be stored in a Delta table for each user (named `serverless_benchmark.default._metimur_metrics_{user_name}`), and an automated dashboard will be generated  to provide information on multiple benchmark runs such as query durations, and query costs.
 
-You want to use Databricks warehouses from local machine or an application:
-* execute queries with parameters on Databricks SQL warehouse from your local machine using [Databricks Execute SQL API](https://docs.databricks.com/api/workspace/statementexecution/executestatement). 
-* download the data to csv files
-* and aggregate query duration from Query History API
+![dashboard](./assets/dashboard.jpg)
 
-
-**Repreqs**:
-* Python 3.9+ installed on your local machine
-* Access to Databricks workspace, and permission to create Personal Access Token
-* Access to an existing Databricks SQL Warehouse
-
-### Getting Started
-
-1. Clone this repo to your local machine, in your terminal 
-* Go to `cd metimur/extras/quickstarts_restapi_standalone`
-
-2. Upload your query file to `queries` folder, replace any required params with `:param_name`. Refer to `tpch_w_param.sql` file for sample queries with params or Databricks [API doc](https://docs.databricks.com/api/workspace/statementexecution/executestatement)
-
-3. Duplicate the .env_sample file, rename the copy to .env, and populate it with your specific environment variables.
-```
-HOST=xxxxx.cloud.databricks.com
-AUTH_TOKEN=dapixxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-WAREHOUSE_ID=475xxxxxx
-CATALOG=samples
-SCHEMA=tpch
-USER_NAME = ""
-```
-
-<details>
-<summary>Instructions to obtain above parameters</summary>
-
-* HOST: aka [Workspace Instance Name](https://docs.databricks.com/en/workspace/workspace-details.html) can be located on the browser when you login to Databricks workspace
-
-* AUTH_TOKEN: aka Databricks [personal access token](https://docs.databricks.com/en/workspace/workspace-details.html)
-
-* WAREHOUSE_ID: Use an already-existed warehouse or create a new one in your Databricks workspace before proceeding. From Databricks workspace, go to `SQL Warhouses`, choose your warehouse, `Connection details`, the warehouse ID is the last part of HTTP path `/sql/1.0/warehouses/<warehouse_id>`
-
-* CATALOG and SCHEMA: of the tables you want to query
-
-* USER_NAME: the user name you used to access the workspace and run the queries
-
-</details>
-
-4. Create a python virtual environment, and install required packages. In your terminal inside your cloned directory, run the following:
-```
-python3 -m venv myvenv
-
-source myvenv/bin/activate
-
-pip install -r requirements.txt
-```
-
-5. Run the `quickstarts_restapi_standalone` file
-
-```
-python quickstarts_restapi_standalone.py 
-```
-
-### Output
-
-**Download Example Output**
-
-![download ouput](assets/download_example.png)
-
-**Benchmark Example Output**
-The average query duration will show in your terminal similar to below:
-```
-         duration
-query            
-Q1     811.776923
-Q2     657.579487
-Q3     420.361538
-...
-```
+**Notes:**
+* You will need permission to CREATE CATALOG and CREATE SCHEMA in Unity Catalog to proceed
+* All users in the workspace can create table in `serverless_benchmark.default`
+* Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`
+* Each user will have their dashboard assets saved in their user workspace location
 
 # Limitations
 
