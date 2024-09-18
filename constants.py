@@ -101,9 +101,9 @@ _WIDGETS_BASE = [
     ("dropdown", ("Benchmark Choice", "one-warehouse", ["one-warehouse", "multiple-warehouses", "multiple-warehouses-size"])),
     
     ("dropdown", ("Warehouse Type", "serverless", ["serverless", "pro", "classic"])),
-    ("multiselect", ("Warehouse Size", "Small", VALID_WAREHOUSES)),
+    ("multiselect", ("Warehouse Sizes", "Small", VALID_WAREHOUSES)),
     ("dropdown", ("Query Repetition Count", "1", [str(x) for x in range(1, 101)])),
-
+    ("dropdown", ("Min Clusters", "1", [str(x) for x in range(1, 41)])),
     ("dropdown", ("Max Clusters", "1", [str(x) for x in range(1, 41)])),
     ("dropdown", ("Results Cache Enabled", "False", ["True", "False"])),
 ]

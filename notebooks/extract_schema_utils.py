@@ -90,7 +90,7 @@ def write_json_schemas(table_schemas, output_folder):
 
 ### MAIN
 table_schemas = extract_table_schemas("samples", "tpch")
-write_json_schemas(table_schemas, "../schemas/tpch")
+write_json_schemas(table_schemas, "../schemas/tpch2")
 
 # COMMAND ----------
 

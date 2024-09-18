@@ -95,8 +95,9 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
-TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+from dbruntime.databricks_repl_context import get_context
+HOSTNAME = get_context().browserHostName
+TOKEN = get_context().apiToken
 catalog_name = "serverless_benchmark"
 
 # COMMAND ----------

@@ -67,14 +67,13 @@
 
 import pandas as pd
 import logging
-from beaker import benchmark
+from beaker import benchmark, spark_fixture, sqlwarehouseutils
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from databricks.sdk import WorkspaceClient
 import os
 import requests
 import re
 from pyspark.sql.functions import lit
-
-# COMMAND ----------
 
 spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 
@@ -82,46 +81,51 @@ spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 
 logger = logging.getLogger()
 
-HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
-TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
+from dbruntime.databricks_repl_context import get_context
+HOSTNAME = get_context().browserHostName
+TOKEN = get_context().apiToken
+
 VALID_WAREHOUSES = ["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"]
 
 # COMMAND ----------
 
 # Specify the benchmarking options
-dbutils.widgets.dropdown(name="benchmark_choice", defaultValue="one-warehouse", choices=["one-warehouse", "multiple-warehouses", "multiple-warehouses-size"])
+dbutils.widgets.dropdown(name="benchmark_choice", label="01. benchmark_choice", defaultValue="one-warehouse", choices=["one-warehouse", "multiple-warehouses", "multiple-warehouses-size"])
 
-dbutils.widgets.text(name="warehouse_prefix", defaultValue="Metimur", label="warehouse_prefix")
-dbutils.widgets.dropdown(name="warehouse_type", defaultValue="serverless", choices=["serverless", "pro", "classic"], label="warehouse_type")
-dbutils.widgets.multiselect(name="warehouse_size", defaultValue="Small", choices=VALID_WAREHOUSES, label="warehouse_size")
+dbutils.widgets.text(name="warehouse_prefix", defaultValue="Metimur", label="02. warehouse_prefix")
+dbutils.widgets.dropdown(name="warehouse_type", defaultValue="serverless", choices=["serverless", "pro", "classic"], label="03. warehouse_type")
+dbutils.widgets.multiselect(name="warehouse_sizes", defaultValue="Small", choices=VALID_WAREHOUSES, label="04. warehouse_size")
 
-dbutils.widgets.text(name="catalog_name", defaultValue="samples", label="catalog_name")
-dbutils.widgets.text(name="schema_name", defaultValue="tpch", label="schema_name")
+dbutils.widgets.text(name="catalog_name", defaultValue="samples", label="05. catalog_name")
+dbutils.widgets.text(name="schema_name", defaultValue="tpch", label="06. schema_name")
 
 #Specify your query file location
-dbutils.widgets.text(name="query_path", defaultValue="./queries/tpch", label="query_path")
-dbutils.widgets.dropdown(name="query_repetition_count", defaultValue="1", choices=[str(x) for x in range(1,101)], label="query_repetition_count")
+dbutils.widgets.text(name="query_path", defaultValue="./queries/tpch", label="07. query_path")
+dbutils.widgets.dropdown(name="query_repetition_count", defaultValue="1", choices=[str(x) for x in range(1,101)], label="08. query_repetition_count")
 
-dbutils.widgets.text(name="concurrency", defaultValue="1", label="concurrency")
-dbutils.widgets.text(name="max_clusters", defaultValue="1", label="max_clusters")
-dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", choices = ["True", "False"], label="results_cache_enabled")
+dbutils.widgets.text(name="concurrency", defaultValue="1", label="09. concurrency")
+dbutils.widgets.text(name="min_clusters", defaultValue="1", label="10. min_clusters")
+dbutils.widgets.text(name="max_clusters", defaultValue="1", label="11. max_clusters")
+dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", choices = ["True", "False"], label="12. results_cache_enabled")
+dbutils.widgets.dropdown(name="disk_cache_enabled", defaultValue="True", choices = ["True", "False"], label="13. disk_cache_enabled")
 
 # COMMAND ----------
 
-benchmark_choice = dbutils.widgets.get("benchmark_choice")
+# List all widget names and their values
+widgets = dbutils.widgets.getAll()
 
-warehouse_prefix = dbutils.widgets.get("warehouse_prefix")
-warehouse_sizes_str = dbutils.widgets.get("warehouse_size")
-warehouse_type = dbutils.widgets.get("warehouse_type")
+# Create variables with the same names as the widget names and assign their values
+for name, value in widgets.items():
+    if name in ["query_repetition_count", "concurrency", "min_clusters", "max_clusters"]:
+        exec(f"{name} = int('{value}')")
+    elif name in ["results_cache_enabled", "disk_cache_enabled"]:
+        exec(f"{name} = True if '{value}' in ('True', 'true') else False")
+    else:
+        exec(f"{name} = '{value}'")
 
-catalog_name = dbutils.widgets.get("catalog_name")
-schema_name = dbutils.widgets.get("schema_name")
-
-query_path = dbutils.widgets.get("query_path")
-query_repetition_count = int(dbutils.widgets.get("query_repetition_count"))
-concurrency = int(dbutils.widgets.get("concurrency"))
-max_clusters = int(dbutils.widgets.get("max_clusters"))
-results_cache_enabled = True if dbutils.widgets.get("results_cache_enabled") in ("True", "true") else False
+# Print the variables to verify
+for name, value in widgets.items():
+    print(f"{name}: {eval(name)}")
 
 # COMMAND ----------
 
@@ -130,7 +134,7 @@ results_cache_enabled = True if dbutils.widgets.get("results_cache_enabled") in 
 
 # COMMAND ----------
 
-warehouse_sizes = warehouse_sizes_str.split(",")
+warehouse_sizes = warehouse_sizes.split(",")
 warehouse_size = warehouse_sizes[0]
 if benchmark_choice == "multiple-warehouses-size":
   print("Benchmark on multiple warehouse sizes:", warehouse_sizes)
@@ -153,9 +157,6 @@ tables
 
 # COMMAND ----------
 
-from beaker import spark_fixture, sqlwarehouseutils
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
-
 def get_warehouse(hostname, token, warehouse_name):
   sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses"
   response = requests.get(sql_warehouse_url, headers={"Authorization": f"Bearer {token}"})
@@ -167,31 +168,45 @@ def get_warehouse(hostname, token, warehouse_name):
   else:
     print(f"Error: {response.json()['error_code']}, {response.json()['message']}")
 
+def update_warehouse(hostname, token, warehouse_id, new_config):
+    sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses/{warehouse_id}/edit"
+    response = requests.post(sql_warehouse_url, headers={"Authorization": f"Bearer {token}"}, json=new_config)
+    
+    if response.status_code == 200:
+        print(f"Warehouse {warehouse_id} updated successfully.")
+    else:
+        print(f"Error: {response.json()['error_code']}, {response.json()['message']}")
+
+# COMMAND ----------
+
 def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
 
     warehouse_name = f"{warehouse_prefix} {warehouse_type} {warehouse_size}"
     # Get warehouse id
     warehouse_id = get_warehouse(HOSTNAME, TOKEN, warehouse_name)
 
+    new_warehouse_config = {
+            "name": warehouse_name,
+            "type": "warehouse",
+            "warehouse": warehouse_type,
+            "runtime": "latest",
+            "size": warehouse_size,
+            "min_num_clusters": min_clusters,
+            "max_num_clusters": max_clusters,
+            "enable_photon": True,
+        }
+
     if warehouse_id:
-        # Use your own warehouse
-        print(f"--Use current warehouse `{warehouse_name}` {warehouse_id}--")
+        # Update existing warehouse
+        print(f"--Updating current warehouse `{warehouse_name}` {warehouse_id}--")
+        update_warehouse(HOSTNAME, TOKEN, warehouse_id, new_warehouse_config)
         http_path = f"/sql/1.0/warehouses/{warehouse_id}"
         new_warehouse_config = None
     else:
         # Specify a new warehouse
         http_path = None
         print(f"--Specify new warehouse `{warehouse_name}`--")
-        new_warehouse_config = {
-            "name": warehouse_name,
-            "type": "warehouse",
-            "warehouse": warehouse_type,
-            "runtime": "latest",
-            "size": warehouse_size,
-            "min_num_clusters": 1,
-            "max_num_clusters": max_clusters,
-            "enable_photon": True,
-        }
+        
 
     bm = benchmark.Benchmark()
     bm.setName(f"Benchmark {warehouse_name}")
@@ -207,7 +222,8 @@ def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
     bm.setCatalog(catalog_name)
     bm.setSchema(schema_name)
 
-    bm.preWarmTables(tables)
+    if disk_cache_enabled:
+        bm.preWarmTables(tables)
     
     bm.query_file_format = "semicolon-delimited"
     bm.setConcurrency(concurrency)
@@ -305,39 +321,6 @@ display(metrics_pdf)
 
 # COMMAND ----------
 
-import plotly.graph_objects as go
-
-# Group the metrics by 'id' and 'warehouse_name' and calculate the average duration
-grouped_metrics = metrics_pdf.groupby(['id', 'warehouse_name']).mean(numeric_only=True)['duration'].reset_index()
-
-# Convert duration from milliseconds to seconds
-grouped_metrics['duration'] = grouped_metrics['duration'] / 1000
-
-# Create a stacked bar chart using Plotly
-fig = go.Figure()
-
-# Iterate over each unique warehouse_name and add a bar for each warehouse
-for warehouse_name in grouped_metrics['warehouse_name'].unique():
-    warehouse_data = grouped_metrics[grouped_metrics['warehouse_name'] == warehouse_name]
-    fig.add_trace(go.Bar(
-        x=warehouse_data['id'],
-        y=warehouse_data['duration'],
-        name=warehouse_name
-    ))
-
-# Set the layout of the chart
-fig.update_layout(
-    xaxis_title='ID',
-    yaxis_title='Duration (secs)',
-    title='Query Duration by Warehouse'
-)
-
-# Display the chart
-fig.show()
-
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC # View Benchmark Metrics in Lakeview Dashboard
 # MAGIC Review the metrics for all your benchmark runs in below dashboard
@@ -366,6 +349,19 @@ fig.show()
 
 # COMMAND ----------
 
+user_name = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+lv_workspace_path = f"/Users/{user_name}"
+lv_dashboard_name = "metimur_benchmark_metrics_dashboard"
+print(f"Lakeview dashboard assets will be saved at: {lv_workspace_path}")
+
+user_name_clean = user_name.replace(".", "_").replace("@", "_")
+
+lv_metrics_table_name = f"_metimur_metrics_{user_name_clean}"
+lv_catalog_name = "serverless_benchmark"
+lv_schema_name = "default"
+
+# COMMAND ----------
+
 def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
   spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
   spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
@@ -379,17 +375,6 @@ def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
   print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
 
 # COMMAND ----------
-
-user_name = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
-lv_workspace_path = f"/Users/{user_name}"
-lv_dashboard_name = "metimur_benchmark_metrics_dashboard"
-print(f"Lakeview dashboard assets saved at: {lv_workspace_path}")
-
-user_name_clean = user_name.replace(".", "_").replace("@", "_")
-
-lv_metrics_table_name = f"_metimur_metrics_{user_name_clean}"
-lv_catalog_name = "serverless_benchmark"
-lv_schema_name = "default"
 
 set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 
@@ -420,12 +405,12 @@ create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_na
 # MAGIC %md
 # MAGIC
 # MAGIC ## Create a Lakeview dashboard from the template 
-# MAGIC * `./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json`
+# MAGIC * `./lakeview_dashboard_gen/metimur_benchmark_metrics_dashboard.lvdash.json`
 
 # COMMAND ----------
 
 lv_api = lakeview_dash_manager(host=HOSTNAME, token=TOKEN)
-lv_api.load_dash_local("./lakeview_dashboard_gen/Metimur_metric_lakeview_template.lvdash.json")
+lv_api.load_dash_local("./lakeview_dashboard_gen/metimur_benchmark_metrics_dashboard.lvdash.json")
 lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
 dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
 print(f"Dashboard is ready at: {dashboard_link}")
