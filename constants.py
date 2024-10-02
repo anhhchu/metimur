@@ -105,6 +105,7 @@ _WIDGETS_BASE = [
     ("dropdown", ("Query Repetition Count", "1", [str(x) for x in range(1, 101)])),
     ("dropdown", ("Min Clusters", "1", [str(x) for x in range(1, 41)])),
     ("dropdown", ("Max Clusters", "1", [str(x) for x in range(1, 41)])),
+    ("dropdown", ("Disk Cache Enabled", "True", ["True", "False"])),
     ("dropdown", ("Results Cache Enabled", "False", ["True", "False"])),
 ]
 
@@ -190,10 +191,16 @@ class Constants:
     query_path: str
 
     # Maximum number of clusters
+    min_clusters: int
+
+    # Maximum number of clusters
     max_clusters: int
 
     # Result Cache Enabled
     results_cache_enabled: bool
+
+    # Disk Cache Enabled
+    disk_cache_enabled: bool
 
     benchmark_choice: str
 
@@ -207,7 +214,7 @@ class Constants:
     warehouse_type: str
 
     # Size of the warehouse cluster
-    warehouse_size: str
+    warehouse_sizes: str
 
     # # Warehouse channel name
     # channel: str

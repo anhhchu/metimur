@@ -81,9 +81,12 @@ spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
 
 logger = logging.getLogger()
 
-from dbruntime.databricks_repl_context import get_context
-HOSTNAME = get_context().browserHostName
-TOKEN = get_context().apiToken
+# from dbruntime.databricks_repl_context import get_context
+# HOSTNAME = get_context().browserHostName
+# TOKEN = get_context().apiToken
+
+HOSTNAME = spark.conf.get('spark.databricks.workspaceUrl')
+TOKEN = WorkspaceClient().tokens.create(comment='temp use', lifetime_seconds=60*60*12).token_value
 
 VALID_WAREHOUSES = ["2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", "4X-Large"]
 
@@ -94,7 +97,7 @@ dbutils.widgets.dropdown(name="benchmark_choice", label="01. benchmark_choice", 
 
 dbutils.widgets.text(name="warehouse_prefix", defaultValue="Metimur", label="02. warehouse_prefix")
 dbutils.widgets.dropdown(name="warehouse_type", defaultValue="serverless", choices=["serverless", "pro", "classic"], label="03. warehouse_type")
-dbutils.widgets.multiselect(name="warehouse_sizes", defaultValue="Small", choices=VALID_WAREHOUSES, label="04. warehouse_size")
+dbutils.widgets.multiselect(name="warehouse_sizes", defaultValue="Small", choices=VALID_WAREHOUSES, label="04. warehouse_sizes")
 
 dbutils.widgets.text(name="catalog_name", defaultValue="samples", label="05. catalog_name")
 dbutils.widgets.text(name="schema_name", defaultValue="tpch", label="06. schema_name")
