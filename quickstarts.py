@@ -366,16 +366,24 @@ lv_schema_name = "default"
 # COMMAND ----------
 
 def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
-  spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
-  spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
-  spark.sql(f"GRANT CREATE SCHEMA ON CATALOG {catalog} TO `account users`")
-  spark.sql(f"USE catalog {catalog}")
-  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
-  spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
-  spark.sql(f"USE {catalog}.{schema}")
-  spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
+    # USE HIVE METASTORE
+    if catalog == "hive_metastore":
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+        spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
+        spark.sql(f"USE {catalog}.{schema}")
 
-  print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
+    # USE UNITY CATALOG
+    elif catalog != "samples":
+        spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
+        spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
+        spark.sql(f"GRANT CREATE SCHEMA ON CATALOG {catalog} TO `account users`")
+        spark.sql(f"USE catalog {catalog}")
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+        spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
+        spark.sql(f"USE {catalog}.{schema}")
+        spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
+
+    print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
 
 # COMMAND ----------
 
