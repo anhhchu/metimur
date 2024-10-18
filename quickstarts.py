@@ -33,10 +33,9 @@
 # MAGIC 4. Query Path:
 # MAGIC
 # MAGIC * Specify the path to the query file or directory containing the benchmark queries.
-# MAGIC * For **TPCH** benchmark, default Query Path is `queries/tpch`. 
-# MAGIC * For **TPCDS** benchmark, default Query Path is `queries/tpcds`
-# MAGIC * Query Format: 
-# MAGIC   * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
+# MAGIC
+# MAGIC * Upload the queries to a separate folder under queries directory, and provide the path in Query Path widget
+# MAGIC * IMPORTANT! Ensure your queries follow the specified pattern (put query number between -- and end each query with ;). You can put multiple queries in one file or each query in a separate file.
 # MAGIC
 # MAGIC ```sql
 # MAGIC --q1--
@@ -45,6 +44,12 @@
 # MAGIC --q2--
 # MAGIC select * from table2;
 # MAGIC ```
+# MAGIC
+# MAGIC * For queries without params, follow queries/tpch or queries/tpcds folders for example:
+# MAGIC   * For **TPCH** benchmark, default Query Path is `queries/tpch`. 
+# MAGIC   * For **TPCDS** benchmark, default Query Path is `queries/tpcds`
+# MAGIC
+# MAGIC * For queries with params, provide params in the queries follow by colon `:param`, then specify the list of params for each query in `params.json` with format {"query_id2": [{param1_name: value11, param2_name: value21}, {param1_name: value12, param2_name: value22}], query_id2: [{param1_name: value11, param2_name: value21}, {param1_name: value12, param2_name: value22}]} on the same folder. Follow examples in `queries/tpch_w_params` folder
 # MAGIC
 # MAGIC 5. Concurrency Level, Cluster Size, and Result Cache:
 # MAGIC
@@ -103,14 +108,15 @@ dbutils.widgets.text(name="catalog_name", defaultValue="samples", label="05. cat
 dbutils.widgets.text(name="schema_name", defaultValue="tpch", label="06. schema_name")
 
 #Specify your query file location
-dbutils.widgets.text(name="query_path", defaultValue="./queries/tpch", label="07. query_path")
-dbutils.widgets.dropdown(name="query_repetition_count", defaultValue="1", choices=[str(x) for x in range(1,101)], label="08. query_repetition_count")
+dbutils.widgets.text(name="query_path", defaultValue="queries/tpch_w_params", label="07. query_path")
+dbutils.widgets.text(name="params_path", defaultValue="./queries/tpch_w_params/params.json", label="08. params_path")
+dbutils.widgets.dropdown(name="query_repetition_count", defaultValue="1", choices=[str(x) for x in range(1,101)], label="09. query_repetition_count")
 
-dbutils.widgets.text(name="concurrency", defaultValue="1", label="09. concurrency")
-dbutils.widgets.text(name="min_clusters", defaultValue="1", label="10. min_clusters")
-dbutils.widgets.text(name="max_clusters", defaultValue="1", label="11. max_clusters")
-dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", choices = ["True", "False"], label="12. results_cache_enabled")
-dbutils.widgets.dropdown(name="disk_cache_enabled", defaultValue="True", choices = ["True", "False"], label="13. disk_cache_enabled")
+dbutils.widgets.text(name="concurrency", defaultValue="1", label="10. concurrency")
+dbutils.widgets.text(name="min_clusters", defaultValue="1", label="11. min_clusters")
+dbutils.widgets.text(name="max_clusters", defaultValue="1", label="12. max_clusters")
+dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", choices = ["True", "False"], label="13. results_cache_enabled")
+dbutils.widgets.dropdown(name="disk_cache_enabled", defaultValue="True", choices = ["True", "False"], label="14. disk_cache_enabled")
 
 # COMMAND ----------
 
@@ -228,7 +234,6 @@ def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
     if disk_cache_enabled:
         bm.preWarmTables(tables)
     
-    bm.query_file_format = "semicolon-delimited"
     bm.setConcurrency(concurrency)
     bm.setQueryRepeatCount(query_repetition_count)
     bm.results_cache_enabled = results_cache_enabled
@@ -238,6 +243,9 @@ def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
     else:
         bm.setQueryFile(query_path)
     
+    if params_path:
+        bm.setParamsPath(params_path)
+
     metrics_pdf = bm.execute()
     # bm.sql_warehouse.close_connection()
     bm.stop_warehouse(bm.warehouse_id)

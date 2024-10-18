@@ -46,28 +46,118 @@ The **quickstart** notebook provides a convenient way to execute queries concurr
 Clone this repo and add the repo to your Databricks Workspace. Refer to [Databricks Repo](https://docs.databricks.com/en/repos/repos-setup.html) for instruction on how to create Databricks repo on your own workspace
 
 1. Open **quickstarts** notebook on Databricks workspace.
-2. Connect the notebook to Single User Cluster with DBR14.3+ LTS
-3. Follow the instruction in the notebook
-4. Click `Run/Run All`
+2. Connect the notebook to Single User Cluster with DBR14.3 LTS or above
+3. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget
+  * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. 
+  
+  * For queries without params, follow **queries/tpch** or **queries/tpcds** folders for example
+
+  * For queries with params, provide params in the queries follow by colon `:param`, then specify the list of params for each query in `params.json` with format {"query_id2": [{param1_name: value11, param2_name: value21}, {param1_name: value12, param2_name: value22}], query_id2: [{param1_name: value11, param2_name: value21}, {param1_name: value12, param2_name: value22}]} on the same folder. Follow examples in `queries/tpch_w_params` folder
+
+    <details>
+    <summary>Query Examples</summary>
+
+    ```sql
+    --Q00--
+    SELECT * FROM lineitem;
+
+    --Q01--
+    SELECT
+    l_returnflag,
+    l_linestatus,
+    sum(l_quantity) as sum_qty,
+    sum(l_extendedprice) as sum_base_price,
+    sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+    sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+    avg(l_quantity) as avg_qty,
+    avg(l_extendedprice) as avg_price,
+    avg(l_discount) as avg_disc,
+    count(*) as count_order
+    FROM
+    lineitem
+    WHERE
+    l_shipdate <= cast(:l_shipdate as date) - interval '90' day
+    GROUP BY
+    l_returnflag,
+    l_linestatus
+    ORDER BY
+    l_returnflag,
+    l_linestatus;
+
+    --Q02--
+    select
+    s_acctbal,
+    s_name,
+    n_name,
+    p_partkey,
+    p_mfgr,
+    s_address,
+    s_phone,
+    s_comment
+    from
+    part,
+    supplier,
+    partsupp,
+    nation,
+    region
+    where
+    p_partkey = ps_partkey
+    and s_suppkey = ps_suppkey
+    and p_size = :p_size
+    and p_type like :p_type
+    and s_nationkey = n_nationkey
+    and n_regionkey = r_regionkey
+    and r_name = :r_name
+    and ps_supplycost = (
+        select
+        min(ps_supplycost)
+        from
+        partsupp,
+        supplier,
+        nation,
+        region
+        where
+        p_partkey = ps_partkey
+        and s_suppkey = ps_suppkey
+        and s_nationkey = n_nationkey
+        and n_regionkey = r_regionkey
+        and r_name = :r_name
+    )
+    order by
+    s_acctbal desc,
+    n_name,
+    s_name,
+    p_partkey;
+    ```
+
+    Example for params.json file
+
+    ```json
+    {
+        "Q01": [
+            {"l_shipdate": "1998-12-01"},
+            {"l_shipdate": "1998-11-01"}
+        ],
+        "Q02": [
+            {"p_size": 15,"p_type": "%BRASS","r_name": "EUROPE"}
+        ]
+    }
+    ```
+
+    </details>
+
+4. Follow instruction in the notebook
+5. Click `Run/Run All`
 
 ### Output
 
-1. With **one-warehouse** benchmark option, you can view the average duration of each query
-
-![quickstarts one warehouse](./assets/quickstarts_onewh.png)
+1. With **one-warehouse** benchmark option, you can view the average duration of each query in the warehouse
 
 2. With **multiple-warehouses** benchmark option, three types of warehouses - serverless, pro, and classic - are automatically generated. They will have the same size based on warehouse_size widget and their names will be prefixed with the warehouse_prefix widget.
 
-![warehouse startup time](./assets/warehouses_startup.png)
-
-![warehouse metrics](./assets/warehouses_metrics.png)
-
 3. With **multiple-warehouses-size** benchmark option, you can choose multiple warehouse sizes from the drop down **warehouse_size** widget. These warehouse will be created with have the same type based on **warehouse_type** widget and their names will be prefixed with the **warehouse_prefix** widget.
 
-![warehouse size](./assets/warehouses_size.png)
-
 **Note: The query duration is fetched from Query History API and should be consistent with query duration on Databricks monitoring UI**
-
 
 ## Use Case 2: Generate Synthetic Data based on table schemas
 
@@ -118,17 +208,9 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
     ```
     </detail>
 
-6. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget
-  * **IMPORTANT!** Ensure your queries follow the specified pattern (put query number between `--` and end each query with `;`). You can put multiple queries in one file or each query in a separate file. Follow **queries/tpch** or **queries/tpcds** folders for example
+6. Upload the queries to a separate folder under **queries** directory, and provide the path in **Query Path** widget. Follow instruction in [Use Case 1: Benchmark existing data](#use-case-1-benchmark-existing-data)
 
-    ```
-    --q1--
-    select * from table1;
-
-    --q2--
-    select * from table2;
-    ```
-
+    
 ### Output
 
 1. An automated Workflow job is created with 2 tasks: Generate_Data and Run_Benchmarking
@@ -137,11 +219,7 @@ Clone this repo and add the repo to your Databricks Workspace. Refer to [Databri
 
 2. In **generate_data** task, data are generated in `serverless_benchmark` catalog and user-specified schema name
 
-![generate data](./assets/byod.png)
-
 3. In the **run_benchmarking task**, benchmark queries are executed on the generated data
-
-![run byod benchmarking](./assets/byod_run_benchmarking.png)
 
 
 ## Use Case 3: Generate TPC Data
