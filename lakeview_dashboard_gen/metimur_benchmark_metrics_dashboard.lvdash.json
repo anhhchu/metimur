@@ -3,27 +3,27 @@
     {
       "name": "c1e86c01",
       "displayName": "last_run_timestamp",
-      "query": "select max(run_timestamp) as last_run_timestamp from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
+      "query": "select DATE_FORMAT(CONVERT_TIMEZONE('UTC', max(run_timestamp)), 'yyyy-MM-dd\\'T\\'HH:mm:ss') as last_run_timestamp from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
     },
     {
       "name": "a5827d89",
       "displayName": "query_metrics",
-      "query": "SELECT \n    run_timestamp,\n    warehouse_id,\n    query_start_time_ms, query_end_time_ms,\n    id,\n    query_text,\n    concurrency, \n    benchmark_catalog, \n    benchmark_schema,   \n    warehouse_name,\n    duration,\n    duration/1000 as duration_secs,\n    metrics.planning_time_ms/1000 as query_planning_time_secs,\n    metrics.execution_time_ms/1000 as query_execution_time_secs,\n    metrics.compilation_time_ms/1000 as query_compliation_time_secs,\n    metrics.result_from_cache as result_from_cache,\n    metrics.rows_produced_count as rows_produced_count,\n    metrics.read_files_count as read_files_count,\n    metrics.read_partitions_count as read_partitions_count,\n    metrics.pruned_bytes as pruned_bytes,\n    metrics.pruned_files_count as pruned_files_count,\n    metrics.spill_to_disk_bytes as spill_to_disk_bytes,\n    metrics.rows_read_count as rows_read_count\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME;\n"
+      "query": "SELECT \n    DATE_FORMAT(CONVERT_TIMEZONE('UTC', run_timestamp), 'yyyy-MM-dd\\'T\\'HH:mm:ss') as run_timestamp_utc,\n    warehouse_id,\n    query_start_time_ms, query_end_time_ms,\n    id,\n    query_text,\n    concurrency, \n    benchmark_catalog, \n    benchmark_schema,   \n    warehouse_name,\n    duration,\n    duration/1000 as duration_secs,\n    metrics.planning_time_ms/1000 as query_planning_time_secs,\n    metrics.execution_time_ms/1000 as query_execution_time_secs,\n    metrics.compilation_time_ms/1000 as query_compliation_time_secs,\n    metrics.result_from_cache as result_from_cache,\n    metrics.rows_produced_count as rows_produced_count,\n    metrics.read_files_count as read_files_count,\n    metrics.read_partitions_count as read_partitions_count,\n    metrics.pruned_bytes as pruned_bytes,\n    metrics.pruned_files_count as pruned_files_count,\n    metrics.spill_to_disk_bytes as spill_to_disk_bytes,\n    metrics.rows_read_count as rows_read_count\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME;\n"
     },
     {
       "name": "17c1da0b",
       "displayName": "metimur_metrics",
-      "query": "WITH Percentiles_CTE AS (\n    SELECT \n        run_timestamp, \n        id, \n        warehouse_name,\n        concurrency,\n        transform(\n            percentile_cont(array(0.25, 0.5, 0.75, 0.90, 0.99)) WITHIN GROUP (ORDER BY round(duration/1000, 4)), \n            x -> round(x, 4)\n        ) as Percentiles, \n        min(duration)/1000 as min_duration_secs,\n        median(duration)/1000 as median_duration_secs,\n        round(avg(duration)/1000,4) as avg_duration_secs,\n        max(duration)/1000 as max_duration_secs,\n        round(avg(metrics.planning_time_ms)/1000,4) as avg_query_planning_time_secs,\n        round(avg(metrics.execution_time_ms)/100,4) as avg_query_execution_time_secs,\n        round(avg(metrics.compilation_time_ms)/1000,4) as avg_query_compliation_time_secs\n    FROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n    GROUP BY run_timestamp, id, warehouse_name, concurrency\n)\nSELECT \n    run_timestamp, \n    id, \n    warehouse_name,\n    concurrency,\n    min_duration_secs,\n    median_duration_secs,\n    avg_duration_secs,\n    max_duration_secs,\n    Percentiles[0] as P25,\n    Percentiles[1] as P50,\n    Percentiles[2] as P75,\n    Percentiles[3] as P90,\n    Percentiles[4] as P99,\n    avg_query_planning_time_secs,\n    avg_query_execution_time_secs,\n    avg_query_compliation_time_secs\nFROM Percentiles_CTE\nORDER BY id"
+      "query": "WITH Percentiles_CTE AS (\n    SELECT \n        run_timestamp, \n        id, \n        warehouse_name,\n        concurrency,\n        transform(\n            percentile_cont(array(0.25, 0.5, 0.75, 0.90, 0.99)) WITHIN GROUP (ORDER BY round(duration/1000, 4)), \n            x -> round(x, 4)\n        ) as Percentiles, \n        min(duration)/1000 as min_duration_secs,\n        median(duration)/1000 as median_duration_secs,\n        round(avg(duration)/1000,4) as avg_duration_secs,\n        max(duration)/1000 as max_duration_secs,\n        round(avg(metrics.planning_time_ms)/1000,4) as avg_query_planning_time_secs,\n        round(avg(metrics.execution_time_ms)/100,4) as avg_query_execution_time_secs,\n        round(avg(metrics.compilation_time_ms)/1000,4) as avg_query_compliation_time_secs\n    FROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n    GROUP BY run_timestamp, id, warehouse_name, concurrency\n)\nSELECT \n    DATE_FORMAT(CONVERT_TIMEZONE('UTC', run_timestamp), 'yyyy-MM-dd\\'T\\'HH:mm:ss') as run_timestamp_utc, \n    id, \n    warehouse_name,\n    concurrency,\n    min_duration_secs,\n    median_duration_secs,\n    avg_duration_secs,\n    max_duration_secs,\n    Percentiles[0] as P25,\n    Percentiles[1] as P50,\n    Percentiles[2] as P75,\n    Percentiles[3] as P90,\n    Percentiles[4] as P99,\n    avg_query_planning_time_secs,\n    avg_query_execution_time_secs,\n    avg_query_compliation_time_secs\nFROM Percentiles_CTE\nORDER BY id"
     },
     {
       "name": "715e17b1",
       "displayName": "benchmark_config",
-      "query": "select distinct run_timestamp, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
+      "query": "select distinct DATE_FORMAT(CONVERT_TIMEZONE('UTC', run_timestamp), 'yyyy-MM-dd\\'T\\'HH:mm:ss') as run_timestamp_utc, concurrency, benchmark_catalog, benchmark_schema\nFROM CATALOG_NAME.SCHEMA_NAME.TABLE_NAME"
     },
     {
       "name": "1a5ed835",
       "displayName": "query_cost",
-      "query": "with dbu_size_view AS\n(\n  SELECT '2X-Small' AS size, 4 AS dbu_per_h\n  UNION ALL\n  SELECT 'X-Small', 6\n  UNION ALL\n  SELECT 'Small', 12\n  UNION ALL\n  SELECT 'Medium', 24\n  UNION ALL\n  SELECT 'Large', 40\n  UNION ALL\n  SELECT 'X-Large', 80\n  UNION ALL\n  SELECT '2X-Large', 144\n  UNION ALL\n  SELECT '3X-Large', 272\n  UNION ALL\n  SELECT '4X-Large', 528\n),\n\nsystem_warehouse_cte as (\nSELECT\n    we.warehouse_id AS warehouse_id,\n    we.event_type AS event,\n    we.event_time AS event_time,\n    we.cluster_count AS cluster_count,\n    lead(event_time) over (PARTITION BY warehouse_id ORDER BY event_time) AS next_event_time\nFROM\n    system.compute.warehouse_events AS we\nWHERE\n    we.event_type IN (\n        'STARTING', 'RUNNING', 'STOPPING', 'STOPPED',\n        'SCALING_UP', 'SCALED_UP', 'SCALING_DOWN', 'SCALED_DOWN'\n    )\n    -- and warehouse_id = '8097a27ebcc78d0b'\n)\n\nselect a. run_timestamp, a.benchmark_catalog, a.benchmark_schema, \n  a.warehouse_id, a.id, a.warehouse_name, a.warehouse_size, a.warehouse_type, a.duration as duration_ms,\n  a.duration/(1000*60*60) as duration_hours, \n    CASE\n    WHEN a.warehouse_type LIKE '%serverless%' THEN 0.7\n    WHEN a.warehouse_type LIKE '%pro%' THEN 0.55\n    WHEN a.warehouse_type LIKE '%classic%' THEN 0.22\n  END AS unit_cost,\n  b.cluster_count, c.dbu_per_h,\n  duration_hours * cluster_count * c.dbu_per_h as dbus,\n  dbus * unit_cost as dollar_dbus\nfrom (\n  select *, split_part(warehouse_name, \" \", -1) as warehouse_size,\n      split_part(warehouse_name, \" \", -2) as warehouse_type\n  from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n  ) a\njoin system_warehouse_cte b\njoin dbu_size_view c\non  a.warehouse_id = b.warehouse_id\nand a.warehouse_size = c.size\nand from_unixtime(a.query_start_time_ms/1000) between b.event_time and b.next_event_time\n;\n"
+      "query": "with dbu_size_view AS\n(\n  SELECT '2X-Small' AS size, 4 AS dbu_per_h\n  UNION ALL\n  SELECT 'X-Small', 6\n  UNION ALL\n  SELECT 'Small', 12\n  UNION ALL\n  SELECT 'Medium', 24\n  UNION ALL\n  SELECT 'Large', 40\n  UNION ALL\n  SELECT 'X-Large', 80\n  UNION ALL\n  SELECT '2X-Large', 144\n  UNION ALL\n  SELECT '3X-Large', 272\n  UNION ALL\n  SELECT '4X-Large', 528\n),\n\nsystem_warehouse_cte as (\nSELECT\n    we.warehouse_id AS warehouse_id,\n    we.event_type AS event,\n    we.event_time AS event_time,\n    we.cluster_count AS cluster_count,\n    lead(event_time) over (PARTITION BY warehouse_id ORDER BY event_time) AS next_event_time\nFROM\n    system.compute.warehouse_events AS we\nWHERE\n    we.event_type IN (\n        'STARTING', 'RUNNING', 'STOPPING', 'STOPPED',\n        'SCALING_UP', 'SCALED_UP', 'SCALING_DOWN', 'SCALED_DOWN'\n    )\n    -- and warehouse_id = '8097a27ebcc78d0b'\n)\n\nselect DATE_FORMAT(CONVERT_TIMEZONE('UTC', a.run_timestamp), 'yyyy-MM-dd\\'T\\'HH:mm:ss') as run_timestamp_utc, a.benchmark_catalog, a.benchmark_schema, \n  a.warehouse_id, a.id, a.warehouse_name, a.warehouse_size, a.warehouse_type, a.duration as duration_ms,\n  a.duration/(1000*60*60) as duration_hours, \n    CASE\n    WHEN a.warehouse_type LIKE '%serverless%' THEN 0.7\n    WHEN a.warehouse_type LIKE '%pro%' THEN 0.55\n    WHEN a.warehouse_type LIKE '%classic%' THEN 0.22\n  END AS unit_cost,\n  b.cluster_count, c.dbu_per_h,\n  duration_hours * cluster_count * c.dbu_per_h as dbus,\n  dbus * unit_cost as dollar_dbus\nfrom (\n  select *, split_part(warehouse_name, \" \", -1) as warehouse_size,\n      split_part(warehouse_name, \" \", -2) as warehouse_type\n  from CATALOG_NAME.SCHEMA_NAME.TABLE_NAME\n  ) a\njoin system_warehouse_cte b\njoin dbu_size_view c\non  a.warehouse_id = b.warehouse_id\nand a.warehouse_size = c.size\nand from_unixtime(a.query_start_time_ms/1000) between b.event_time and b.next_event_time\n;\n"
     }
   ],
   "pages": [
@@ -176,12 +176,12 @@
                       "expression": "`warehouse_name`"
                     },
                     {
-                      "name": "id",
-                      "expression": "`id`"
-                    },
-                    {
                       "name": "avg(duration_secs)",
                       "expression": "AVG(`duration_secs`)"
+                    },
+                    {
+                      "name": "id",
+                      "expression": "`id`"
                     }
                   ],
                   "disaggregated": false
@@ -193,6 +193,13 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
+                  "fieldName": "avg(duration_secs)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Average duration_secs"
+                },
+                "y": {
                   "fieldName": "id",
                   "axis": {
                     "title": "Query id"
@@ -200,17 +207,10 @@
                   "scale": {
                     "type": "categorical",
                     "sort": {
-                      "by": "natural-order"
+                      "by": "x-reversed"
                     }
                   },
                   "displayName": "Query id"
-                },
-                "y": {
-                  "fieldName": "avg(duration_secs)",
-                  "scale": {
-                    "type": "quantitative"
-                  },
-                  "displayName": "Average duration_secs"
                 },
                 "color": {
                   "fieldName": "warehouse_name",
@@ -376,16 +376,16 @@
             "name": "75e4f07c",
             "queries": [
               {
-                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e411ab9b9042da3b7f456a2_run_timestamp",
+                "name": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1d6a9ecc2dd0391795f4_run_timestamp_utc",
                 "query": {
                   "datasetName": "715e17b1",
                   "fields": [
                     {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
+                      "name": "run_timestamp_utc",
+                      "expression": "`run_timestamp_utc`"
                     },
                     {
-                      "name": "run_timestamp_associativity",
+                      "name": "run_timestamp_utc_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -393,16 +393,16 @@
                 }
               },
               {
-                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e381eb1a8a22e1372f73b22_run_timestamp",
+                "name": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1cc3a0a26531e3ee90c2_run_timestamp_utc",
                 "query": {
                   "datasetName": "a5827d89",
                   "fields": [
                     {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
+                      "name": "run_timestamp_utc",
+                      "expression": "`run_timestamp_utc`"
                     },
                     {
-                      "name": "run_timestamp_associativity",
+                      "name": "run_timestamp_utc_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -410,16 +410,16 @@
                 }
               },
               {
-                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e471bf8a7c99419c23f21dd_run_timestamp",
+                "name": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1da3914bbfe902e13487_run_timestamp_utc",
                 "query": {
                   "datasetName": "1a5ed835",
                   "fields": [
                     {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
+                      "name": "run_timestamp_utc",
+                      "expression": "`run_timestamp_utc`"
                     },
                     {
-                      "name": "run_timestamp_associativity",
+                      "name": "run_timestamp_utc_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -427,16 +427,16 @@
                 }
               },
               {
-                "name": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e3d16bcb58cfb86dd9f4138_run_timestamp",
+                "name": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1cf584d1e7db82481936_run_timestamp_utc",
                 "query": {
                   "datasetName": "17c1da0b",
                   "fields": [
                     {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
+                      "name": "run_timestamp_utc",
+                      "expression": "`run_timestamp_utc`"
                     },
                     {
-                      "name": "run_timestamp_associativity",
+                      "name": "run_timestamp_utc_associativity",
                       "expression": "COUNT_IF(`associative_filter_predicate_group`)"
                     }
                   ],
@@ -450,24 +450,24 @@
               "encodings": {
                 "fields": [
                   {
-                    "fieldName": "run_timestamp",
-                    "displayName": "run_timestamp",
-                    "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e411ab9b9042da3b7f456a2_run_timestamp"
+                    "fieldName": "run_timestamp_utc",
+                    "displayName": "run_timestamp_utc",
+                    "queryName": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1d6a9ecc2dd0391795f4_run_timestamp_utc"
                   },
                   {
-                    "fieldName": "run_timestamp",
-                    "displayName": "run_timestamp",
-                    "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e381eb1a8a22e1372f73b22_run_timestamp"
+                    "fieldName": "run_timestamp_utc",
+                    "displayName": "run_timestamp_utc",
+                    "queryName": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1cc3a0a26531e3ee90c2_run_timestamp_utc"
                   },
                   {
-                    "fieldName": "run_timestamp",
-                    "displayName": "run_timestamp",
-                    "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e471bf8a7c99419c23f21dd_run_timestamp"
+                    "fieldName": "run_timestamp_utc",
+                    "displayName": "run_timestamp_utc",
+                    "queryName": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1da3914bbfe902e13487_run_timestamp_utc"
                   },
                   {
-                    "fieldName": "run_timestamp",
-                    "displayName": "run_timestamp",
-                    "queryName": "dashboards/01ef2dd225561238b4099e206f658f41/datasets/01ef76097e3d16bcb58cfb86dd9f4138_run_timestamp"
+                    "fieldName": "run_timestamp_utc",
+                    "displayName": "run_timestamp_utc",
+                    "queryName": "dashboards/01ef24f733a51790a6a5d07ecfddeacd/datasets/01ef91a13d5c1cf584d1e7db82481936_run_timestamp_utc"
                   }
                 ]
               },
@@ -494,8 +494,8 @@
                   "datasetName": "715e17b1",
                   "fields": [
                     {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
+                      "name": "run_timestamp_utc",
+                      "expression": "`run_timestamp_utc`"
                     },
                     {
                       "name": "concurrency",
@@ -520,8 +520,7 @@
               "encodings": {
                 "columns": [
                   {
-                    "fieldName": "run_timestamp",
-                    "dateTimeFormat": "DD/MM/YY HH:mm:ss.SSS",
+                    "fieldName": "run_timestamp_utc",
                     "booleanValues": [
                       "false",
                       "true"
@@ -534,18 +533,18 @@
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
                     "linkOpenInNewTab": true,
-                    "type": "datetime",
-                    "displayAs": "datetime",
+                    "type": "string",
+                    "displayAs": "string",
                     "visible": true,
                     "order": 100000,
-                    "title": "run_timestamp",
+                    "title": "run_timestamp_utc",
                     "allowSearch": false,
-                    "alignContent": "right",
+                    "alignContent": "left",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "displayName": "run_timestamp"
+                    "displayName": "run_timestamp_utc"
                   },
                   {
                     "fieldName": "concurrency",
@@ -660,10 +659,6 @@
                   "datasetName": "a5827d89",
                   "fields": [
                     {
-                      "name": "id",
-                      "expression": "`id`"
-                    },
-                    {
                       "name": "avg(query_planning_time_secs)",
                       "expression": "AVG(`query_planning_time_secs`)"
                     },
@@ -674,6 +669,10 @@
                     {
                       "name": "avg(query_execution_time_secs)",
                       "expression": "AVG(`query_execution_time_secs`)"
+                    },
+                    {
+                      "name": "id",
+                      "expression": "`id`"
                     }
                   ],
                   "disaggregated": false
@@ -685,19 +684,6 @@
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "id",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "natural-order"
-                    }
-                  },
-                  "axis": {
-                    "title": "Query ID"
-                  },
-                  "displayName": "Query ID"
-                },
-                "y": {
                   "scale": {
                     "type": "quantitative"
                   },
@@ -719,6 +705,19 @@
                     "title": "Percentage of Total Duration"
                   }
                 },
+                "y": {
+                  "fieldName": "id",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  },
+                  "axis": {
+                    "title": "Query ID"
+                  },
+                  "displayName": "Query ID"
+                },
                 "color": {
                   "legend": {
                     "position": "bottom"
@@ -736,9 +735,9 @@
           },
           "position": {
             "x": 0,
-            "y": 65,
+            "y": 56,
             "width": 6,
-            "height": 8
+            "height": 13
           }
         },
         {
@@ -854,6 +853,20 @@
                       "expression": "`id`"
                     }
                   ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "warehouse_name"
+                        ]
+                      }
+                    ]
+                  },
                   "disaggregated": false,
                   "orders": [
                     {
@@ -897,7 +910,7 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "Average Duration (Secs) Per Query",
+                "title": "Average Duration (Secs) Per Query By Warehouse",
                 "showDescription": false,
                 "description": ""
               }
@@ -905,8 +918,8 @@
           },
           "position": {
             "x": 0,
-            "y": 52,
-            "width": 3,
+            "y": 43,
+            "width": 6,
             "height": 13
           }
         },
@@ -919,10 +932,6 @@
                 "query": {
                   "datasetName": "a5827d89",
                   "fields": [
-                    {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
-                    },
                     {
                       "name": "id",
                       "expression": "`id`"
@@ -1001,34 +1010,6 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  {
-                    "fieldName": "run_timestamp",
-                    "dateTimeFormat": "DD/MM/YY HH:mm:ss.SSS",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "datetime",
-                    "displayAs": "datetime",
-                    "visible": true,
-                    "order": 0,
-                    "title": "run_timestamp",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "run_timestamp"
-                  },
                   {
                     "fieldName": "id",
                     "booleanValues": [
@@ -1630,6 +1611,31 @@
                   "highlightLinks": false,
                   "useMonospaceFont": false,
                   "preserveWhitespace": false
+                },
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "run_timestamp_utc",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100000,
+                  "title": "run_timestamp_utc",
+                  "allowSearch": false,
+                  "alignContent": "left",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
                 }
               ],
               "allowHTMLByDefault": false,
@@ -1725,569 +1731,6 @@
         },
         {
           "widget": {
-            "name": "422f930d",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "1a5ed835",
-                  "fields": [
-                    {
-                      "name": "avg(dollar_dbus)",
-                      "expression": "AVG(`dollar_dbus`)"
-                    },
-                    {
-                      "name": "warehouse_name",
-                      "expression": "`warehouse_name`"
-                    },
-                    {
-                      "name": "id",
-                      "expression": "`id`"
-                    }
-                  ],
-                  "disaggregated": false,
-                  "orders": [
-                    {
-                      "direction": "ASC",
-                      "expression": "`id`"
-                    },
-                    {
-                      "direction": "ASC",
-                      "expression": "`warehouse_name`"
-                    }
-                  ]
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "pivot",
-              "encodings": {
-                "rows": [
-                  {
-                    "fieldName": "id",
-                    "displayName": "id"
-                  }
-                ],
-                "columns": [
-                  {
-                    "fieldName": "warehouse_name",
-                    "displayName": "warehouse_name"
-                  }
-                ],
-                "cell": {
-                  "type": "multi-cell",
-                  "fields": [
-                    {
-                      "fieldName": "avg(dollar_dbus)",
-                      "cellType": "text",
-                      "displayName": "Average dollar_dbus"
-                    }
-                  ]
-                }
-              },
-              "frame": {
-                "showTitle": true,
-                "title": "Average Dollar DBU Per Query",
-                "showDescription": true,
-                "description": "This view is based on the system.compute.warehouse_events table. Data updates may be delayed; refresh after 5 minutes."
-              }
-            }
-          },
-          "position": {
-            "x": 3,
-            "y": 52,
-            "width": 3,
-            "height": 13
-          }
-        },
-        {
-          "widget": {
-            "name": "3fbc9a71",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "1a5ed835",
-                  "fields": [
-                    {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
-                    },
-                    {
-                      "name": "id",
-                      "expression": "`id`"
-                    },
-                    {
-                      "name": "warehouse_name",
-                      "expression": "`warehouse_name`"
-                    },
-                    {
-                      "name": "warehouse_id",
-                      "expression": "`warehouse_id`"
-                    },
-                    {
-                      "name": "duration_hours",
-                      "expression": "`duration_hours`"
-                    },
-                    {
-                      "name": "unit_cost",
-                      "expression": "`unit_cost`"
-                    },
-                    {
-                      "name": "cluster_count",
-                      "expression": "`cluster_count`"
-                    },
-                    {
-                      "name": "dbu_per_h",
-                      "expression": "`dbu_per_h`"
-                    },
-                    {
-                      "name": "dbus",
-                      "expression": "`dbus`"
-                    },
-                    {
-                      "name": "dollar_dbus",
-                      "expression": "`dollar_dbus`"
-                    }
-                  ],
-                  "disaggregated": true
-                }
-              }
-            ],
-            "spec": {
-              "version": 1,
-              "widgetType": "table",
-              "encodings": {
-                "columns": [
-                  {
-                    "fieldName": "run_timestamp",
-                    "dateTimeFormat": "DD/MM/YY HH:mm:ss.SSS",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "datetime",
-                    "displayAs": "datetime",
-                    "visible": true,
-                    "order": 0,
-                    "title": "run_timestamp",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "run_timestamp"
-                  },
-                  {
-                    "fieldName": "id",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 1,
-                    "title": "id",
-                    "allowSearch": false,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "id"
-                  },
-                  {
-                    "fieldName": "warehouse_name",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 2,
-                    "title": "warehouse_name",
-                    "allowSearch": false,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "warehouse_name"
-                  },
-                  {
-                    "fieldName": "warehouse_id",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 3,
-                    "title": "warehouse_id",
-                    "allowSearch": false,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "warehouse_id"
-                  },
-                  {
-                    "fieldName": "duration_hours",
-                    "numberFormat": "0.0000",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "float",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 9,
-                    "title": "duration_hours",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "duration_hours"
-                  },
-                  {
-                    "fieldName": "unit_cost",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "decimal",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 10,
-                    "title": "unit_cost",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "unit_cost"
-                  },
-                  {
-                    "fieldName": "cluster_count",
-                    "numberFormat": "0",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "integer",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 11,
-                    "title": "cluster_count",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "cluster_count"
-                  },
-                  {
-                    "fieldName": "dbu_per_h",
-                    "numberFormat": "0",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "integer",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 12,
-                    "title": "dbu_per_h",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "dbu_per_h"
-                  },
-                  {
-                    "fieldName": "dbus",
-                    "numberFormat": "0.0000",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "float",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 13,
-                    "title": "dbus",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "dbus"
-                  },
-                  {
-                    "fieldName": "dollar_dbus",
-                    "numberFormat": "0.0000",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "float",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 14,
-                    "title": "dollar_dbus",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "dollar_dbus"
-                  }
-                ]
-              },
-              "invisibleColumns": [
-                {
-                  "booleanValues": [
-                    "false",
-                    "true"
-                  ],
-                  "imageUrlTemplate": "{{ @ }}",
-                  "imageTitleTemplate": "{{ @ }}",
-                  "imageWidth": "",
-                  "imageHeight": "",
-                  "linkUrlTemplate": "{{ @ }}",
-                  "linkTextTemplate": "{{ @ }}",
-                  "linkTitleTemplate": "{{ @ }}",
-                  "linkOpenInNewTab": true,
-                  "name": "benchmark_catalog",
-                  "type": "string",
-                  "displayAs": "string",
-                  "order": 4,
-                  "title": "benchmark_catalog",
-                  "allowSearch": false,
-                  "alignContent": "left",
-                  "allowHTML": false,
-                  "highlightLinks": false,
-                  "useMonospaceFont": false,
-                  "preserveWhitespace": false
-                },
-                {
-                  "booleanValues": [
-                    "false",
-                    "true"
-                  ],
-                  "imageUrlTemplate": "{{ @ }}",
-                  "imageTitleTemplate": "{{ @ }}",
-                  "imageWidth": "",
-                  "imageHeight": "",
-                  "linkUrlTemplate": "{{ @ }}",
-                  "linkTextTemplate": "{{ @ }}",
-                  "linkTitleTemplate": "{{ @ }}",
-                  "linkOpenInNewTab": true,
-                  "name": "benchmark_schema",
-                  "type": "string",
-                  "displayAs": "string",
-                  "order": 5,
-                  "title": "benchmark_schema",
-                  "allowSearch": false,
-                  "alignContent": "left",
-                  "allowHTML": false,
-                  "highlightLinks": false,
-                  "useMonospaceFont": false,
-                  "preserveWhitespace": false
-                },
-                {
-                  "booleanValues": [
-                    "false",
-                    "true"
-                  ],
-                  "imageUrlTemplate": "{{ @ }}",
-                  "imageTitleTemplate": "{{ @ }}",
-                  "imageWidth": "",
-                  "imageHeight": "",
-                  "linkUrlTemplate": "{{ @ }}",
-                  "linkTextTemplate": "{{ @ }}",
-                  "linkTitleTemplate": "{{ @ }}",
-                  "linkOpenInNewTab": true,
-                  "name": "warehouse_size",
-                  "type": "string",
-                  "displayAs": "string",
-                  "order": 6,
-                  "title": "warehouse_size",
-                  "allowSearch": false,
-                  "alignContent": "left",
-                  "allowHTML": false,
-                  "highlightLinks": false,
-                  "useMonospaceFont": false,
-                  "preserveWhitespace": false
-                },
-                {
-                  "booleanValues": [
-                    "false",
-                    "true"
-                  ],
-                  "imageUrlTemplate": "{{ @ }}",
-                  "imageTitleTemplate": "{{ @ }}",
-                  "imageWidth": "",
-                  "imageHeight": "",
-                  "linkUrlTemplate": "{{ @ }}",
-                  "linkTextTemplate": "{{ @ }}",
-                  "linkTitleTemplate": "{{ @ }}",
-                  "linkOpenInNewTab": true,
-                  "name": "warehouse_type",
-                  "type": "string",
-                  "displayAs": "string",
-                  "order": 7,
-                  "title": "warehouse_type",
-                  "allowSearch": false,
-                  "alignContent": "left",
-                  "allowHTML": false,
-                  "highlightLinks": false,
-                  "useMonospaceFont": false,
-                  "preserveWhitespace": false
-                },
-                {
-                  "numberFormat": "0",
-                  "booleanValues": [
-                    "false",
-                    "true"
-                  ],
-                  "imageUrlTemplate": "{{ @ }}",
-                  "imageTitleTemplate": "{{ @ }}",
-                  "imageWidth": "",
-                  "imageHeight": "",
-                  "linkUrlTemplate": "{{ @ }}",
-                  "linkTextTemplate": "{{ @ }}",
-                  "linkTitleTemplate": "{{ @ }}",
-                  "linkOpenInNewTab": true,
-                  "name": "duration_ms",
-                  "type": "integer",
-                  "displayAs": "number",
-                  "order": 8,
-                  "title": "duration_ms",
-                  "allowSearch": false,
-                  "alignContent": "right",
-                  "allowHTML": false,
-                  "highlightLinks": false,
-                  "useMonospaceFont": false,
-                  "preserveWhitespace": false
-                }
-              ],
-              "allowHTMLByDefault": false,
-              "itemsPerPage": 25,
-              "paginationSize": "default",
-              "condensed": true,
-              "withRowNumber": false,
-              "frame": {
-                "showTitle": true,
-                "title": "Individual Query Cost",
-                "showDescription": true,
-                "description": "This view is based on the system.compute.warehouse_events table. Data updates may be delayed; refresh after 5 minutes."
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 43,
-            "width": 6,
-            "height": 9
-          }
-        },
-        {
-          "widget": {
             "name": "e3b20411",
             "queries": [
               {
@@ -2295,10 +1738,6 @@
                 "query": {
                   "datasetName": "17c1da0b",
                   "fields": [
-                    {
-                      "name": "run_timestamp",
-                      "expression": "`run_timestamp`"
-                    },
                     {
                       "name": "id",
                       "expression": "`id`"
@@ -2369,34 +1808,6 @@
               "widgetType": "table",
               "encodings": {
                 "columns": [
-                  {
-                    "fieldName": "run_timestamp",
-                    "dateTimeFormat": "YYYY-MM-DD HH:mm:ss.SSS",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "datetime",
-                    "displayAs": "datetime",
-                    "visible": true,
-                    "order": 100000,
-                    "title": "run_timestamp",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "run_timestamp"
-                  },
                   {
                     "fieldName": "id",
                     "booleanValues": [
@@ -2817,7 +2228,33 @@
                   }
                 ]
               },
-              "invisibleColumns": [],
+              "invisibleColumns": [
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "run_timestamp_utc",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100000,
+                  "title": "run_timestamp_utc",
+                  "allowSearch": false,
+                  "alignContent": "left",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                }
+              ],
               "allowHTMLByDefault": false,
               "itemsPerPage": 25,
               "paginationSize": "default",
