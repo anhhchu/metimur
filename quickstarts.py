@@ -403,7 +403,7 @@ metrics_sdf = (
                   .withColumn("concurrency", lit(concurrency))
                   .withColumn("benchmark_catalog", lit(catalog_name))
                   .withColumn("benchmark_schema", lit(schema_name))
-                  .selectExpr("current_timestamp() as run_timestamp", "concurrency", 
+                  .selectExpr("CAST(current_timestamp() AS STRING) as run_timestamp", "concurrency", 
                               "id", "warehouse_name", "benchmark_catalog", "benchmark_schema",
                               "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema)")
 )
