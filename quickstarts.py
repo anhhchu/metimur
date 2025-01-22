@@ -9,8 +9,11 @@
 # MAGIC ## Getting Started
 # MAGIC
 # MAGIC 1. Set Up: 
-# MAGIC   * Attach a Databricks personal compute with DBR14.3+ to this notebook
-# MAGIC   * Run Each cell under the "Set up" section manually to set up parameters.
+# MAGIC     * Attach a Databricks personal single-node non-Photon compute with DBR14.3+ to this notebook. 
+# MAGIC         * The more concurrency you have the more cores you need in your single node cluster. 
+# MAGIC         * Each core can handle 6-8 threads. Adjust this based on the number of warehouses to benchmark against. 
+# MAGIC         * For example, if benchmark against 3 warhouses with 20 concurrent queries, you might need at least `3*30/8 ~ 12 cores`
+# MAGIC     * Run Each cell under the "Set up" section manually to set up parameters.
 # MAGIC 2. Parameters Update: Update the parameters based on your requirements or keep the default values to observe the functionality.
 # MAGIC 3. Executing the Notebook: After making the necessary changes, you can click "Run" or "Run All" to execute the entire notebook with the updated parameters.
 # MAGIC 4. Warehouses will be stopped right after benchmarking is completed
@@ -19,44 +22,59 @@
 # MAGIC
 # MAGIC 1. Benchmark Choice:
 # MAGIC
-# MAGIC * Choose between running the benchmark on a single warehouse ("one-warehouse") or multiple warehouses types("multiple-warehouses") or multiple warehouse sizes ("multiple-warehouses-size").
-# MAGIC   * One Warehouse Specification: For the "one-warehouse" option, select a default warehouse specification: 
-# MAGIC     * warehouse prefix: This parameter specifies the name prefix of the warehouse. When running the benchmark, the warehouse size and type will be attached to the warehouse prefix before spinning up warehouse
+# MAGIC     * Choose between running the benchmark on a single warehouse ("one-warehouse") or multiple warehouses types("multiple-warehouses") or multiple warehouse sizes ("multiple-warehouses-size").
+# MAGIC     * One Warehouse Specification: For the "one-warehouse" option, select a default warehouse specification: 
+# MAGIC       * warehouse prefix: This parameter specifies the name prefix of the warehouse. When running the benchmark, the warehouse size and type will be attached to the warehouse prefix before spinning up warehouse
 # MAGIC
-# MAGIC     * warehouse type: This parameter allows you to select the type of warehouse for the benchmark. The available options are "serverless", "pro", and "classic".
+# MAGIC       * warehouse type: This parameter allows you to select the type of warehouse for the benchmark. The available options are "serverless", "pro", and "classic".
 # MAGIC
-# MAGIC     * Warehouse Size: This parameter determines the size of the warehouse. You can choose from different predefined sizes such as "2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", and "4X-Large".
+# MAGIC       * Warehouse Size: This parameter determines the size of the warehouse. You can choose from different predefined sizes such as "2X-Small", "X-Small", "Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large", and "4X-Large".
 # MAGIC
-# MAGIC   * Multiple Warehouse Types ("multiple-warehouses"): Running the benchmark on serverless, classic, and pro warehouses with the same size.
-# MAGIC   * Multiple Warehouses and Sizes ("multiple-warehouses-size"): Running the benchmark on multiple warehouses of the same type with different sizes. You can choose multiple warehouse sizes from the dropdown **Warehouse Size** widget
+# MAGIC     * Multiple Warehouse Types ("multiple-warehouses"): Running the benchmark on serverless, classic, and pro warehouses with **the same size**.
+# MAGIC     * Multiple Warehouses and Sizes ("multiple-warehouses-size"): Running the benchmark on multiple warehouses of the **same type with different sizes**. You can choose multiple warehouse sizes from the dropdown Warehouse Size widget
 # MAGIC
-# MAGIC 4. Query Path:
+# MAGIC 2. Catalog name, Schema name: 
+# MAGIC     * Specify the catalog_name and schema_name location of your existing Delta tables participating in the benchmark
 # MAGIC
-# MAGIC * Specify the path to the query file or directory containing the benchmark queries.
+# MAGIC 3. Query Path & Params Path:
 # MAGIC
-# MAGIC * Upload the queries to a separate folder under queries directory, and provide the path in Query Path widget
-# MAGIC * IMPORTANT! Ensure your queries follow the specified pattern (put query number between -- and end each query with ;). You can put multiple queries in one file or each query in a separate file.
+# MAGIC     * Specify the path to the query file or directory containing the benchmark queries.
 # MAGIC
-# MAGIC ```sql
-# MAGIC --q1--
-# MAGIC select * from table1;
+# MAGIC     * Upload the queries to a separate folder under queries directory, and provide the path in Query Path widget
+# MAGIC     * IMPORTANT! Ensure your queries follow the specified pattern (put query number between -- and end each query with ;). You can put multiple queries in one file or each query in a separate file.
 # MAGIC
-# MAGIC --q2--
-# MAGIC select * from table2;
-# MAGIC ```
+# MAGIC         ```sql
+# MAGIC         --q1--
+# MAGIC         select * from table1;
 # MAGIC
-# MAGIC * For queries without params, follow queries/tpch or queries/tpcds folders for example:
-# MAGIC   * For **TPCH** benchmark, default Query Path is `queries/tpch`. 
-# MAGIC   * For **TPCDS** benchmark, default Query Path is `queries/tpcds`
+# MAGIC         --q2--
+# MAGIC         select * from table2;
+# MAGIC         ```
 # MAGIC
-# MAGIC * For queries with params, provide params in the queries follow by colon `:param`, then specify the list of params for each query in `params.json` with format {"query_id2": [{param1_name: value11, param2_name: value21}, {param1_name: value12, param2_name: value22}], query_id2: [{param1_name: value11, param2_name: value21}, {param1_name: value12, param2_name: value22}]} on the same folder. Follow examples in `queries/tpch_w_params` folder
+# MAGIC     * For queries without params, follow queries/tpch or queries/tpcds folders for example:
+# MAGIC       * For **TPCH** benchmark, default Query Path is `queries/tpch`. 
+# MAGIC       * For **TPCDS** benchmark, default Query Path is `queries/tpcds`
+# MAGIC       * Set the params_path to an empty value
 # MAGIC
-# MAGIC 5. Concurrency Level, Cluster Size, and Result Cache:
+# MAGIC     * For queries with params, 
+# MAGIC       * Provide params in the queries follow by colon `:param_name`, then specify the list of params for each query in `params.json` with below format in the same folder. Follow examples in `queries/tpch_w_params` folder
+# MAGIC         ```json
+# MAGIC         {
+# MAGIC         "Q01": [ { "l_shipdate": "1998-12-01" }, { "l_shipdate": "1998-11-01" } ],
+# MAGIC         "Q02": [ { "p_size": 15, "p_type": "%BRASS", "r_name": "EUROPE" } , 
+# MAGIC                 { "p_size": 37, "p_type": "%BRASS", "r_name": "AMERICA" } ],
+# MAGIC         }
+# MAGIC         ```
+# MAGIC       * Specify the path to the params.json in params_path
 # MAGIC
-# MAGIC * Query Repetition Count: Determines the number of times each query in the benchmark will be executed.
-# MAGIC * Concurrency: Sets the level of concurrency, indicating how many queries can be executed simultaneously.
-# MAGIC * Maximum Clusters: Specifies the maximum number of clusters that the warehouse can be scaled up to. It is recommended to use 1 cluster for every 10 concurrent queries.
-# MAGIC * Result Cache Enabled (default: False): Determines whether the query will be served from the result cache.
+# MAGIC 4. Concurrency Level, Cluster Size, and Result Cache:
+# MAGIC
+# MAGIC     * Query Repetition Count: Determines the number of times each query in the benchmark will be executed.
+# MAGIC     * Concurrency: Sets the level of concurrency, indicating how many queries can be executed simultaneously.
+# MAGIC     * Min Clusters: Specifies the min number of clusters when starting the warehouse. It is recommended to use 1 cluster for every 10 concurrent queries.
+# MAGIC       * For queries that execute quickly, the warehouse may not scale up fast enough. It is advisable to increase the minimum number of clusters.
+# MAGIC     * Max Clusters: Specifies the maximum number of clusters that the warehouse can be scaled up to. It is recommended to use 1 cluster for every 10 concurrent queries.
+# MAGIC     * Result Cache Enabled (default: False): Determines whether the query will be served from the result cache. For benchmarking purpose, it's recommended to keep this as False
 
 # COMMAND ----------
 
@@ -323,17 +341,12 @@ elif benchmark_choice == "multiple-warehouses-size":
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC Below graph shows average duration of all queries in the warehouse history from start to end of benchmark, broken down by warehouses
-
-# COMMAND ----------
-
 display(metrics_pdf)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # View Benchmark Metrics in Lakeview Dashboard
+# MAGIC # View Benchmark Metrics in AI/BI Dashboard
 # MAGIC Review the metrics for all your benchmark runs in below dashboard
 
 # COMMAND ----------
@@ -352,7 +365,7 @@ display(metrics_pdf)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Set up Lakeview Parameters
+# MAGIC ## Set up Dashboard Parameters
 # MAGIC * You will need permission to CREATE CATALOG and CREATE SCHEMA in Unity Catalog to proceed
 # MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`
 # MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
@@ -392,9 +405,9 @@ set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Create a delta table for Lakeview Dashboard
+# MAGIC ## Create a delta table for AI/BI Dashboard
 # MAGIC
-# MAGIC Convert pandas dataframe to spark dataframe and save to lakeview table
+# MAGIC Convert pandas dataframe to spark dataframe and save to Delta table
 
 # COMMAND ----------
 
@@ -415,7 +428,7 @@ create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_na
 
 # MAGIC %md
 # MAGIC
-# MAGIC ## Create a Lakeview dashboard from the template 
+# MAGIC ## Create dashboard from the template 
 # MAGIC * `./lakeview_dashboard_gen/metimur_benchmark_metrics_dashboard.lvdash.json`
 
 # COMMAND ----------

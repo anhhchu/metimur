@@ -2245,13 +2245,13 @@
                 {
                     "widget": {
                         "name": "cdad9a36",
-                        "textbox_spec": "# Metimur Benchmark Metrics - Query Cost"
+                        "textbox_spec": "# Metimur Benchmark Metrics - Query Cost\n\n* Queries on this page are dependent on system tables (system.billing.list_prices, system.query.history, system.billing.usage). \n* System tables should be enabled on the workspace and users should have necessary permission to view this page \n* Follow https://docs.databricks.com/en/admin/system-tables/index.html#enable-a-system-schema for instruction\n"
                     },
                     "position": {
                         "x": 0,
                         "y": 0,
                         "width": 6,
-                        "height": 2
+                        "height": 3
                     }
                 },
                 {
@@ -2605,7 +2605,7 @@
                             "frame": {
                                 "showTitle": true,
                                 "showDescription": true,
-                                "description": "This view is based on multiple system tables. Data updates may be delayed; refresh the query after 5 minutes if data is not updated",
+                                "description": "This view is based on multiple system tables. Data updates may be delayed; refresh the query after 10-20 minutes if data is not updated",
                                 "title": "Avg Cost per Query"
                             }
                         }
@@ -3248,7 +3248,7 @@
                             "frame": {
                                 "showTitle": true,
                                 "showDescription": true,
-                                "description": "This view is based on multiple system tables. Data updates may be delayed; refresh the query after 5 minutes if data is not updated",
+                                "description": "This view is based on multiple system tables. Data updates may be delayed; refresh the query after 10-20 minutes if data is not updated",
                                 "title": "Individual Query Cost"
                             }
                         }
@@ -3398,7 +3398,7 @@
                             "frame": {
                                 "showTitle": true,
                                 "showDescription": true,
-                                "description": "This view is based on multiple system tables. Data updates may be delayed; refresh the query after 5 minutes if data is not updated",
+                                "description": "This view is based on multiple system tables. Data updates may be delayed; refresh the query after 10-20 minutes if data is not updated",
                                 "title": "Total Cost per Query"
                             }
                         }
