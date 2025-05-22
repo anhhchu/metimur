@@ -134,10 +134,16 @@ dbutils.widgets.text(name="concurrency", defaultValue="1", label="10. concurrenc
 dbutils.widgets.text(name="min_clusters", defaultValue="1", label="11. min_clusters")
 dbutils.widgets.text(name="max_clusters", defaultValue="1", label="12. max_clusters")
 dbutils.widgets.dropdown(name="results_cache_enabled", defaultValue="False", choices = ["True", "False"], label="13. results_cache_enabled")
-dbutils.widgets.dropdown(name="disk_cache_enabled", defaultValue="True", choices = ["True", "False"], label="14. disk_cache_enabled")
+dbutils.widgets.dropdown(name="disk_cache_enabled", defaultValue="False", choices = ["True", "False"], label="14. disk_cache_enabled")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Benchmark
+
+# COMMAND ----------
+
+# DBTITLE 1,Confirm the parameters below
 # List all widget names and their values
 widgets = dbutils.widgets.getAll()
 
@@ -153,11 +159,6 @@ for name, value in widgets.items():
 # Print the variables to verify
 for name, value in widgets.items():
     print(f"{name}: {eval(name)}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Benchmark
 
 # COMMAND ----------
 
@@ -418,7 +419,7 @@ metrics_sdf = (
                   .withColumn("benchmark_schema", lit(schema_name))
                   .selectExpr("CAST(current_timestamp() AS STRING) as run_timestamp", "concurrency", 
                               "id", "warehouse_name", "benchmark_catalog", "benchmark_schema",
-                              "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema)")
+                              "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema, query_source)")
 )
 display(metrics_sdf)
 
