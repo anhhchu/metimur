@@ -6,6 +6,8 @@ beaker
 myvenv
 download/*
 queries/adp
+queries/tpcds_delta
+queries/tpcds_online
 .databricks/
 .vscode/
 venv/

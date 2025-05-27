@@ -95,7 +95,8 @@ WORKERS_SCALE_FACTOR_MAP = {1:4, 10:4, 100:8, 1000:16, 10000:32}
 _WIDGETS_BASE = [
     ("text", ("Warehouse Prefix", "Metimur")),
 
-    ("text", ("Query Path", "queries/tpcds")),
+    ("text", ("Query Path", "queries/tpch_w_params")),
+    ("text", ("Params Path", "queries/tpch_w_params/params.json")),
     ("text", ("Concurrency", "1")),
 
     ("dropdown", ("Benchmark Choice", "one-warehouse", ["one-warehouse", "multiple-warehouses", "multiple-warehouses-size"])),
@@ -189,6 +190,9 @@ class Constants:
 
     # Path to query 
     query_path: str
+
+    # Path to params.json file
+    params_path: str
 
     # Maximum number of clusters
     min_clusters: int
@@ -322,6 +326,9 @@ class Constants:
 
         if self.query_path:
             self.query_path = os.path.join(self._cwd, self.query_path)
+
+        if self.params_path:
+            self.params_path = os.path.join(self._cwd, self.params_path)
         # if self.schema_path:
         #     self.schema_path = os.path.join(self._cwd, self.schema_path)
 

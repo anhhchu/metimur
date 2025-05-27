@@ -132,6 +132,7 @@ class DatabricksClient:
                     "catalog_name": catalog_name,
                     "schema_name": schema_name,
                     "query_path": self.constants.query_path,
+                    "params_path": self.constants.params_path,
                     "query_repetition_count": self.constants.query_repetition_count,
                     "concurrency": self.constants.concurrency,
                     "max_clusters": self.constants.min_clusters,
