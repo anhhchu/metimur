@@ -98,7 +98,7 @@ import requests
 import re
 from pyspark.sql.functions import lit
 
-spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
+# spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true") 
 
 # COMMAND ----------
 
