@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # MAGIC %md 
 # MAGIC # Instruction
 # MAGIC
@@ -98,8 +102,6 @@ import requests
 import re
 from pyspark.sql.functions import lit
 
-spark.conf.set("spark.databricks.delta.optimizeWrite.enabled", "true")
-
 # COMMAND ----------
 
 logger = logging.getLogger()
@@ -174,6 +176,7 @@ elif benchmark_choice == "one-warehouse":
 
 # COMMAND ----------
 
+# DBTITLE 1,List tables
 # tables = spark.sql(f"show tables in {catalog_name}.{schema_name}").select("tableName").collect()
 # tables = [row["tableName"] for row in tables]
 # tables
@@ -185,6 +188,7 @@ tables
 
 # COMMAND ----------
 
+# DBTITLE 1,Get warehouse
 def get_warehouse(hostname, token, warehouse_name):
   sql_warehouse_url = f"https://{hostname}/api/2.0/sql/warehouses"
   response = requests.get(sql_warehouse_url, headers={"Authorization": f"Bearer {token}"})
@@ -207,6 +211,7 @@ def update_warehouse(hostname, token, warehouse_id, new_config):
 
 # COMMAND ----------
 
+# DBTITLE 1,Run benchmark
 def run_benchmark(warehouse_type=warehouse_type, warehouse_size=warehouse_size):
 
     warehouse_name = f"{warehouse_prefix} {warehouse_type} {warehouse_size}"
@@ -337,124 +342,126 @@ elif benchmark_choice == "multiple-warehouses-size":
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Benchmark Result
+from datetime import datetime, timezone
 
-# COMMAND ----------
+start_unix_time_ms = 1778000624018
+end_unix_time_ms = 1778001506176
+# Convert milliseconds to seconds
+query_start_from = datetime.fromtimestamp(start_unix_time_ms / 1000, timezone.utc)
+query_start_to = datetime.fromtimestamp(end_unix_time_ms / 1000, timezone.utc)
 
-display(metrics_pdf)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # View Benchmark Metrics in AI/BI Dashboard
-# MAGIC Review the metrics for all your benchmark runs in below dashboard
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Load Modules
-
-# COMMAND ----------
-
-# MAGIC %run ./lakeview_dashboard_gen/benchmark_dash_utils
-
-# COMMAND ----------
-
-# MAGIC %run ./lakeview_dashboard_gen/lakeview_dash_manager
+# print(timestamp.strftime('%Y-%m-%d %H:%M:%S'))
+print(query_start_from, query_start_to)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Set up Dashboard Parameters
-# MAGIC * You will need permission to CREATE CATALOG and CREATE SCHEMA in Unity Catalog to proceed
-# MAGIC * Each user will have all benchmark runs saved in Delta table at `serverless_benchmark.default._metimur_metrics_{user_name}`
-# MAGIC * All users in the workspace can create table in `serverless_benchmark.default`
-# MAGIC * Each user will have their dashboard assets saved in their user workspace location
+# MAGIC # Benchmark Result
 
 # COMMAND ----------
 
-user_name = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
-lv_workspace_path = f"/Users/{user_name}"
-lv_dashboard_name = "metimur_benchmark_metrics_dashboard"
-print(f"Lakeview dashboard assets will be saved at: {lv_workspace_path}")
-
-user_name_clean = user_name.replace(".", "_").replace("@", "_")
-
-lv_metrics_table_name = f"_metimur_metrics_{user_name_clean}"
-lv_catalog_name = "serverless_benchmark"
-lv_schema_name = "default"
-
-# COMMAND ----------
-
-def set_up_lakeview_catalog(catalog:str, schema:str, table:str):
-  spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
-  spark.sql(f"GRANT USE CATALOG ON CATALOG {catalog} TO `account users`")
-  spark.sql(f"GRANT CREATE SCHEMA ON CATALOG {catalog} TO `account users`")
-  spark.sql(f"USE catalog {catalog}")
-  spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
-  spark.sql(f"GRANT USE SCHEMA ON SCHEMA {schema} TO `account users`")
-  spark.sql(f"USE {catalog}.{schema}")
-  spark.sql(f"GRANT CREATE TABLE ON SCHEMA {catalog}.{schema} TO `account users`")
-
-  print(f"Your Metrics Data will be saved in {catalog}.{schema}.{table}")
-
-# COMMAND ----------
-
-set_up_lakeview_catalog(lv_catalog_name, lv_schema_name, lv_metrics_table_name)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Create a delta table for AI/BI Dashboard
+# DBTITLE 1,System Table Method
+# MAGIC %sql
+# MAGIC -- If system.billing.attributed_usage system table is available in the workspace (Workspace is enrolled in Attributed Usage System Table private preview)
+# MAGIC -- it might take up to 24-48hr for data availability
 # MAGIC
-# MAGIC Convert pandas dataframe to spark dataframe and save to Delta table
-
-# COMMAND ----------
-
-metrics_sdf = (
-  spark.createDataFrame(metrics_pdf)
-                  .withColumn("concurrency", lit(concurrency))
-                  .withColumn("benchmark_catalog", lit(catalog_name))
-                  .withColumn("benchmark_schema", lit(schema_name))
-                  .selectExpr("CAST(current_timestamp() AS STRING) as run_timestamp", "concurrency", 
-                              "id", "warehouse_name", "benchmark_catalog", "benchmark_schema",
-                              "* except(id, warehouse_name, concurrency, benchmark_catalog, benchmark_schema, query_source)")
-)
-display(metrics_sdf)
-
-create_table_from_df(metrics_sdf, spark, catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name, overwrite=False)
+# MAGIC SELECT
+# MAGIC   qh.statement_id,
+# MAGIC   qh.account_id,
+# MAGIC   qh.workspace_id,
+# MAGIC   qh.executed_by,
+# MAGIC   qh.statement_text,
+# MAGIC   qh.compute.warehouse_id AS warehouse_id,
+# MAGIC   qh.execution_status,
+# MAGIC   COALESCE(qh.client_application, 'Unknown') AS client_application,
+# MAGIC   qh.start_time,
+# MAGIC   qh.end_time,
+# MAGIC   qh.total_duration_ms,
+# MAGIC   qh.waiting_for_compute_duration_ms as queue_time,
+# MAGIC   qh.total_task_duration_ms,
+# MAGIC   qh.compilation_duration_ms,
+# MAGIC   qh.result_fetch_duration_ms,
+# MAGIC   au.usage_date,
+# MAGIC   au.usage_unit,
+# MAGIC   p.pricing.effective_list.`default` as list_price,
+# MAGIC   active_usage_quantity,
+# MAGIC   (CAST(p.pricing.effective_list.`default` AS FLOAT) * au.active_usage_quantity) AS usage_dollars,
+# MAGIC   au.sku_name
+# MAGIC FROM
+# MAGIC   system.query.history qh
+# MAGIC     LEFT JOIN system.billing.attributed_usage au
+# MAGIC       on au.usage_metadata.dbsql_statement_id = qh.statement_id
+# MAGIC     LEFT JOIN system.billing.list_prices p
+# MAGIC       ON au.sku_name = p.sku_name
+# MAGIC       AND au.start_time BETWEEN
+# MAGIC         p.price_start_time
+# MAGIC       AND
+# MAGIC         coalesce(p.price_end_time, date_add(current_date, 1))
+# MAGIC WHERE
+# MAGIC   qh.workspace_id = :workspace_id
+# MAGIC   and qh.executed_by = :executed_by
+# MAGIC   and qh.compute.warehouse_id = :warehouse_id
+# MAGIC   and qh.start_time between :query_start_from and :query_start_to;
 
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Cost Per Query (Event Driven) — Method Details
+# MAGIC This method calculates the true financial cost of a query using an event-driven, "top-down" approach. It starts with the actual billed DBUs from the Databricks system.billing.usage table and proportionately distributes those costs down to individual queries based on warehouse events (uptime, scaling).
 # MAGIC
-# MAGIC ## Create dashboard from the template 
-# MAGIC * `./lakeview_dashboard_gen/metimur_benchmark_metrics_dashboard.lvdash.json`
-
-# COMMAND ----------
-
-lv_api = lakeview_dash_manager(host=HOSTNAME, token=TOKEN)
-lv_api.load_dash_local("./lakeview_dashboard_gen/metimur_benchmark_metrics_dashboard.lvdash.json")
-lv_api.set_query_uc(catalog_name=lv_catalog_name, schema_name=lv_schema_name, table_name=lv_metrics_table_name)
-dashboard_link = lv_api.import_dash(path=lv_workspace_path, dashboard_name=lv_dashboard_name)
-print(f"Dashboard is ready at: {dashboard_link}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Maintain Metrics table
-
-# COMMAND ----------
-
-# Optimize metrics table
-spark.sql(f"optimize {lv_catalog_name}.{lv_schema_name}.{lv_metrics_table_name} zorder by (run_timestamp)").display()
-
-# COMMAND ----------
-
-# Desc detail of metrics delta table
-spark.sql(f"desc detail {lv_catalog_name}.{lv_schema_name}.{lv_metrics_table_name}").display()
-
-# COMMAND ----------
-
-
+# MAGIC * **Cost is dependent on concurrent queries** — The same query will be attributed different cost depending on warehouse concurrency at execution time. Low concurrency → higher per-query cost. High concurrency → lower per-query cost. Snowflake's QUERY_ATTRIBUTION_HISTORY exhibits the exact same concurrency dependency. This is not a limitation — it's a fundamental, mathematically unavoidable property of any proportional allocation model on shared compute. 
+# MAGIC * **Cost can fluctuate by analysis run time** 
+# MAGIC
+# MAGIC
+# MAGIC **Formula:**
+# MAGIC ```
+# MAGIC utilization_proportion = utilized_seconds / (utilized_seconds + idle_seconds)
+# MAGIC query_attributed_dbus  = utilization_proportion × total_dbus × query_task_time_proportion
+# MAGIC ```
+# MAGIC
+# MAGIC * **Idle detection:** Uses `system.compute.warehouse_events` to build ON/OFF timeline, cross-references with query activity. Classifies each second as UTILIZED / ON\_IDLE / OFF. Denominator is **ON-time only** (OFF seconds excluded).
+# MAGIC * **Work metric:** `total_task_duration_ms + result_fetch_duration_ms + compilation_duration_ms`.
+# MAGIC * **Query timing:** Adjusted `query_work_start_time` (excludes wait) / `query_work_end_time` (includes fetch).
+# MAGIC * **Architecture:** Warehouse-focused — processes all queries in the boundary window → builds full utilization timeline → attributes cost per hour bucket.
+# MAGIC
+# MAGIC | Pros | Cons |
+# MAGIC | --- | --- |
+# MAGIC | More precise utilization via warehouse events | More complex, harder to debug |
+# MAGIC | Broader work metric captures full query footprint | Higher cost estimates (may over-attribute) |
+# MAGIC | Accounts for actual query work windows | Heavier to run (second-level granularity) |
+# MAGIC | Designed for batch / MV materialization | Results can shift as new data arrives |
+# MAGIC | Rich query source classification | |
+# MAGIC
+# MAGIC
+# MAGIC ### Filter Behavior
+# MAGIC
+# MAGIC * **`:executed_by`, `:statement_id`, and time range filters** — Applied only to the **final output** in both cells. They do NOT affect the cost calculation. All concurrent queries on the warehouse are always considered when computing proportional cost.
+# MAGIC * **`:warehouse_id` filter** — Applied **early** in both cells to reduce scan size. Safe because utilization is computed per-warehouse.
+# MAGIC
+# MAGIC
+# MAGIC ### 2. Treatment of Concurrent Queries
+# MAGIC
+# MAGIC Because this is an event-driven model based on actual warehouse uptime, it inherently uses a shared cost philosophy.
+# MAGIC
+# MAGIC * High Concurrency: If a warehouse costs $1.00 per minute to run, and 20 queries are running concurrently for that minute, the $1.00 is split among them based on their relative resource weight. The cost per query drops significantly because the warehouse overhead is shared across many tasks.
+# MAGIC
+# MAGIC * Low Concurrency / Idle Time: If only a single query is running—or if the warehouse remains warm and active between sporadic queries—the active queries must absorb the "warehouse tax" (the full cost of the warehouse being powered on, even if the hardware is underutilized).
+# MAGIC
+# MAGIC ### Treatment of Compilation Time & Result Fetching Time
+# MAGIC
+# MAGIC #### Where These Operations Run
+# MAGIC
+# MAGIC | Operation | Snowflake | Databricks |
+# MAGIC | --- | --- | --- |
+# MAGIC | **Compilation / Optimization** | Runs on the **Cloud Services layer** (separate from warehouse) | Runs on the **SQL Warehouse compute** (consumes DBUs) |
+# MAGIC | **Result Fetching** | Runs on the **Cloud Services layer** (result cache → client transfer) | Runs on the **SQL Warehouse compute** (consumes DBUs) |
+# MAGIC | **Execution** | Runs on the **Virtual Warehouse** (consumes credits) | Runs on the **SQL Warehouse compute** (consumes DBUs) |
+# MAGIC
+# MAGIC Snowflake offloads compilation and result fetching to its Cloud Services layer, which is billed separately from warehouse compute credits. Databricks runs all three phases on the warehouse itself, meaning all three consume DBUs within the same billing stream.
+# MAGIC
+# MAGIC
+# MAGIC #### Impact on Cross-Platform Cost Comparison
+# MAGIC
+# MAGIC Cost per Query cell above captures the complete warehouse footprint including compilation and fetch, which are real DBU consumers on Databricks. Not comparable to Snowflake's warehouse-only metric.
+# MAGIC
+# MAGIC
